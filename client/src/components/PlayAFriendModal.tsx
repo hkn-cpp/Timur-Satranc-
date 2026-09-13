@@ -1,17 +1,29 @@
 import React, { FC, useState, useCallback, useEffect } from 'react';
-import { ArrowLeft, Users, Spinner, SignIn } from '@phosphor-icons/react';
-import { NotificationType, PlayerColor } from '../types';
+import { ArrowLeft, Users, Spinner, SignIn, Clock, CaretDown, Rocket, Lightning, Sliders } from '@phosphor-icons/react';
+import { NotificationType, PlayerColor, TimeControl } from '../types';
 import { createRoom, joinRoom } from '../core/online/roomService';
 import type { OnlineGame } from '../core/online/roomService';
 import { getOrCreatePlayerId, getPlayerName, setPlayerName } from '../lib/auth';
 import { getRating } from '../core/online/ratingService';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { TimeControlModal } from './TimeControlModal';
 
 interface PlayAFriendModalProps {
   onClose: () => void;
   onStartOnlineGame: (gameData: OnlineGame, myColor: PlayerColor, gameCode: string) => void;
   showNotification: (message: string, type?: NotificationType) => void;
+  initialTimeControl?: TimeControl;
 }
+
+const QUICK_TIME_CONTROLS: TimeControl[] = [
+  { category: 'bullet', label: '1 dk', initialMinutes: 1, incrementSeconds: 0, icon: '🚀' },
+  { category: 'bullet', label: '2 + 1', initialMinutes: 2, incrementSeconds: 1, icon: '🚀' },
+  { category: 'blitz', label: '3 + 2', initialMinutes: 3, incrementSeconds: 2, icon: '⚡' },
+  { category: 'blitz', label: '5 dk', initialMinutes: 5, incrementSeconds: 0, icon: '⚡' },
+  { category: 'rapid', label: '10 dk', initialMinutes: 10, incrementSeconds: 0, icon: '⏱️' },
+  { category: 'rapid', label: '15 + 10', initialMinutes: 15, incrementSeconds: 10, icon: '⏱️' },
+  { category: 'none', label: 'Sınırsız', initialMinutes: 0, incrementSeconds: 0, icon: '♾️' },
+];
 
 function toErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'string' && error) return error;
@@ -25,6 +37,7 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
   onClose,
   onStartOnlineGame,
   showNotification,
+  initialTimeControl,
 }) => {
   const [playerNameInput, setPlayerNameInput] = useState(() => getPlayerName());
   const [joinCode, setJoinCode] = useState('');
@@ -32,6 +45,19 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
   const [isJoining, setIsJoining] = useState(false);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
+
+  // Seçili Zaman Kontrolü
+  const [selectedTimeControl, setSelectedTimeControl] = useState<TimeControl>(
+    () =>
+      initialTimeControl || {
+        category: 'rapid',
+        label: '10 dk',
+        initialMinutes: 10,
+        incrementSeconds: 0,
+        icon: '⏱️',
+      }
+  );
+  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +92,11 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
     const name = resolveName();
     setIsCreating(true);
     try {
-      const { data, error } = await createRoom(getOrCreatePlayerId(), name);
+      const { data, error } = await createRoom(getOrCreatePlayerId(), name, {
+        initialMinutes: selectedTimeControl.initialMinutes,
+        incrementSeconds: selectedTimeControl.incrementSeconds,
+        label: selectedTimeControl.label,
+      });
       if (error || !data) {
         showNotification(toErrorMessage(error, 'Oda oluşturulamadı.'), 'error');
         return;
@@ -77,7 +107,7 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
     } finally {
       setIsCreating(false);
     }
-  }, [isCreating, resolveName, onStartOnlineGame, showNotification]);
+  }, [isCreating, resolveName, selectedTimeControl, onStartOnlineGame, showNotification]);
 
   const handleJoinRoom = useCallback(async () => {
     if (isJoining) return;
@@ -109,7 +139,7 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#122b1e]/95 flex flex-col justify-between overflow-y-auto custom-scrollbar animate-fade-in select-none">
-      <div className="w-full">
+      <div className="w-full pb-10">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 pt-8 pb-3 border-b border-white/10 sticky top-0 bg-[#122b1e]/95 z-20">
           <button
@@ -148,15 +178,63 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
           </div>
 
           {/* Oda Oluştur Kartı (krem) */}
-          <div className="bg-[#f5eedc] rounded-2xl p-4 flex flex-col gap-3 shadow-md border border-[#e5dcce]">
-            <span className="text-[#141f1b] font-bold text-sm">Oda Oluştur</span>
-            <p className="text-[#5c6c66] text-xs">
-              Yeni bir oda oluştur ve kodunu arkadaşınla paylaş. Odayı kuran beyaz taşlarla oynar.
+          <div className="bg-[#f5eedc] rounded-2xl p-4 flex flex-col gap-3.5 shadow-md border border-[#e5dcce]">
+            <div className="flex items-center justify-between">
+              <span className="text-[#141f1b] font-bold text-base">Oda Oluştur</span>
+              <span className="text-[11px] bg-[#00d4c4]/20 text-[#0c4e48] border border-[#00d4c4]/40 font-bold px-2.5 py-0.5 rounded-full">
+                {selectedTimeControl.label}
+              </span>
+            </div>
+            <p className="text-[#5c6c66] text-xs leading-relaxed">
+              Zaman kontrolünü seç, yeni bir oda oluştur ve 6 haneli kodunu arkadaşınla paylaş. Odayı kuran beyaz taşlarla başlar.
             </p>
+
+            {/* Zaman Kontrolü Hızlı Seçici */}
+            <div className="flex flex-col gap-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#141f1b]">
+                <span className="flex items-center gap-1.5 text-[#0d2818]">
+                  <Clock size={16} weight="bold" />
+                  <span>Zaman Kontrolü</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsTimeModalOpen(true)}
+                  className="text-[#0c4e48] hover:text-[#00a89a] font-bold text-[11px] flex items-center gap-1 underline underline-offset-2 cursor-pointer"
+                >
+                  <Sliders size={13} weight="bold" />
+                  <span>Tüm Süreler</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                {QUICK_TIME_CONTROLS.map((tc) => {
+                  const isSelected =
+                    selectedTimeControl.label === tc.label &&
+                    selectedTimeControl.initialMinutes === tc.initialMinutes &&
+                    selectedTimeControl.incrementSeconds === tc.incrementSeconds;
+                  return (
+                    <button
+                      key={tc.label}
+                      type="button"
+                      onClick={() => setSelectedTimeControl(tc)}
+                      className={`py-2 px-1.5 rounded-xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer border ${
+                        isSelected
+                          ? 'bg-[#00d4c4] text-[#0d2818] border-[#00b3a5] shadow-sm scale-[1.02] font-extrabold ring-2 ring-[#00d4c4]/40'
+                          : 'bg-[#e9decb] text-[#33413c] border-[#d8ccb6] hover:bg-[#ded1bd] active:scale-95'
+                      }`}
+                    >
+                      <span className="text-xs">{tc.icon}</span>
+                      <span className="leading-tight">{tc.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button
               onClick={handleCreateRoom}
               disabled={isCreating}
-              className="w-full mt-1 bg-[#00d4c4] hover:bg-[#00c4b4] active:scale-98 text-[#0d2818] font-batangas font-bold py-3 rounded-xl shadow-md transition-all cursor-pointer text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full mt-2 bg-[#00d4c4] hover:bg-[#00c4b4] active:scale-98 text-[#0d2818] font-batangas font-bold py-3.5 rounded-xl shadow-md transition-all cursor-pointer text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isCreating ? (
                 <>
@@ -164,14 +242,14 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
                   <span>Oluşturuluyor...</span>
                 </>
               ) : (
-                <span>Odayı Oluştur & Başlat</span>
+                <span>Odayı Oluştur & Başlat ({selectedTimeControl.label})</span>
               )}
             </button>
           </div>
 
           {/* Odaya Katıl Kartı (krem) */}
           <div className="bg-[#f5eedc] rounded-2xl p-4 flex flex-col gap-3 shadow-md border border-[#e5dcce]">
-            <span className="text-[#141f1b] font-bold text-sm">Odaya Katıl</span>
+            <span className="text-[#141f1b] font-bold text-base">Odaya Katıl</span>
             <p className="text-[#5c6c66] text-xs">Arkadaşından aldığın 6 haneli kodu buraya gir:</p>
             <div className="flex gap-2">
               <input
@@ -200,6 +278,18 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Tüm Zaman Seçenekleri Modalı */}
+      {isTimeModalOpen && (
+        <TimeControlModal
+          selectedTime={selectedTimeControl}
+          onSelect={(tc) => {
+            setSelectedTimeControl(tc);
+            setIsTimeModalOpen(false);
+          }}
+          onClose={() => setIsTimeModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

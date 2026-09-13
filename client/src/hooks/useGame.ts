@@ -48,6 +48,7 @@ export interface MoveHistoryEntry {
 export interface UseGameProps {
   initialTimeSeconds?: number;
   incrementSeconds?: number;
+  isInitiallyPaused?: boolean;
   whiteName?: string;
   blackName?: string;
   boardRotates?: boolean;
@@ -69,6 +70,7 @@ export interface UseGameProps {
 export function useGame({
   initialTimeSeconds = 600,
   incrementSeconds = 0,
+  isInitiallyPaused = false,
   whiteName = 'Emir Timur',
   blackName = 'Yıldırım Bayezid',
   boardRotates = false,
@@ -150,8 +152,12 @@ export function useGame({
   // Clocks and UI status (Strictly linked to LIVE game)
   const [whiteTime, setWhiteTime] = useState<number>(initialTimeSeconds);
   const [blackTime, setBlackTime] = useState<number>(initialTimeSeconds);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(isInitiallyPaused);
   const [statusText, setStatusText] = useState<string>(`${whiteName} hamle sırası...`);
+
+  useEffect(() => {
+    setIsPaused(isInitiallyPaused);
+  }, [isInitiallyPaused]);
 
   // History stack for full Undo/Redo actions
   const [historyStack, setHistoryStack] = useState<{
@@ -938,6 +944,15 @@ export function useGame({
           }
           return [...prev, entry];
         });
+
+        // Fischer increment for the remote player who moved
+        if (incrementSeconds > 0) {
+          if (entry.player === 'white') {
+            setWhiteTime((t) => t + incrementSeconds);
+          } else {
+            setBlackTime((t) => t + incrementSeconds);
+          }
+        }
       }
 
       setViewedMoveIndex(null);
@@ -951,7 +966,7 @@ export function useGame({
         setStatusText(`${turnName} hamle sırası...`);
       }
     },
-    [whiteName, blackName]
+    [whiteName, blackName, incrementSeconds]
   );
 
   return {

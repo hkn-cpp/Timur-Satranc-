@@ -4,6 +4,12 @@ import { createInitialBoardSetup } from '../engine/boardSetup';
 const NOT_CONFIGURED_ERROR = () =>
   new Error('Çevrim içi oyun yapılandırılmadı (Supabase bilgileri eksik).');
 
+export interface RoomTimeControl {
+  initialMinutes: number;
+  incrementSeconds: number;
+  label: string;
+}
+
 export interface OnlineGame {
   id: string;
   code: string;
@@ -22,6 +28,7 @@ export interface OnlineGame {
   winner: 'white' | 'black' | 'draw' | null;
   end_reason: string | null;
   status_reason: string | null;
+  time_control?: RoomTimeControl | null;
   // Faz 2 protokol kolonları (migration 02_online_protocol). Eski satırlarda
   // eksik olabileceği için opsiyonel tutulur.
   draw_offer_by?: string | null;
@@ -73,7 +80,8 @@ const ROOM_NOT_FOUND_ERROR = () => new Error('Oda bulunamadı. Kodu kontrol et (
 
 export async function createRoom(
   whitePlayerId: string,
-  whiteName: string
+  whiteName: string,
+  timeControl?: RoomTimeControl | null
 ): Promise<{ data: OnlineGame | null; error: any }> {
   const supabase = getSupabase();
   if (!supabase) {
@@ -89,6 +97,10 @@ export async function createRoom(
   }
 
   const { board, citadels } = createInitialBoardSetup();
+  const citadelsWithMeta = {
+    ...citadels,
+    ...(timeControl ? { timeControl } : {}),
+  };
 
   let lastError: any = null;
 
@@ -106,7 +118,7 @@ export async function createRoom(
         status: 'waiting',
         current_turn: 'white',
         board_state: board,
-        citadels_state: citadels,
+        citadels_state: citadelsWithMeta,
         captured_pieces: { white: [], black: [] },
         has_used_king_swap: { white: false, black: false },
         turn_number: 1,
@@ -120,8 +132,12 @@ export async function createRoom(
       .select()
       .single();
 
-    if (!error) {
-      return { data: data as OnlineGame, error: null };
+    if (!error && data) {
+      const game = data as OnlineGame;
+      if (!game.time_control && (game.citadels_state as any)?.timeControl) {
+        game.time_control = (game.citadels_state as any).timeControl;
+      }
+      return { data: game, error: null };
     }
 
     lastError = error;
@@ -162,7 +178,11 @@ export async function findRoom(
     return { data: null, error };
   }
 
-  return { data: data as OnlineGame, error: null };
+  const game = data as OnlineGame;
+  if (!game.time_control && (game.citadels_state as any)?.timeControl) {
+    game.time_control = (game.citadels_state as any).timeControl;
+  }
+  return { data: game, error: null };
 }
 
 export async function joinRoom(
@@ -236,5 +256,10 @@ export async function joinRoom(
     };
   }
 
-  return { data: updated as OnlineGame, error: null };
+  const updatedGame = updated as OnlineGame;
+  if (!updatedGame.time_control && (updatedGame.citadels_state as any)?.timeControl) {
+    updatedGame.time_control = (updatedGame.citadels_state as any).timeControl;
+  }
+
+  return { data: updatedGame, error: null };
 }

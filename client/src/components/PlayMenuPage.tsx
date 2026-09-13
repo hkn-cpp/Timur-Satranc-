@@ -289,7 +289,19 @@ export const PlayMenuPage: FC<PlayMenuPageProps> = ({
 
       {/* 6. Arkadaşınla Oyna Modalı */}
       {isPlayFriendOpen && (
-        <PlayAFriendModal onClose={()=>setIsPlayFriendOpen(false)} onStartOnlineGame={(gd, mc, gc)=>{ setIsPlayFriendOpen(false); if (onStartOnlineGame) { onStartOnlineGame(gd, mc, gc); } else if (onStartGame) { onStartGame('online', 600); } }} showNotification={showNotification} />
+        <PlayAFriendModal
+          initialTimeControl={selectedTime}
+          onClose={() => setIsPlayFriendOpen(false)}
+          onStartOnlineGame={(gd, mc, gc) => {
+            setIsPlayFriendOpen(false);
+            if (onStartOnlineGame) {
+              onStartOnlineGame(gd, mc, gc);
+            } else if (onStartGame) {
+              onStartGame('online', 600);
+            }
+          }}
+          showNotification={showNotification}
+        />
       )}
     </div>
   );

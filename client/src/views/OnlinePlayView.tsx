@@ -58,6 +58,28 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
     rebuildFromHistory,
   } = useOnlineGame({ gameCode, myColor, initialGameData });
 
+  // ─── Zaman Kontrolü Bilgisi ─────────────────────────────────────────
+  const roomTimeControl = useMemo(() => {
+    const tc =
+      initialGameData.time_control ||
+      (initialGameData.citadels_state as any)?.timeControl ||
+      gameData.time_control ||
+      (gameData.citadels_state as any)?.timeControl;
+    if (tc) {
+      const minutes = typeof tc.initialMinutes === 'number' ? tc.initialMinutes : 10;
+      return {
+        initialTimeSeconds: minutes > 0 ? minutes * 60 : 0,
+        incrementSeconds: typeof tc.incrementSeconds === 'number' ? tc.incrementSeconds : 0,
+        label: tc.label || (minutes > 0 ? `${minutes} dk` : 'Sınırsız'),
+      };
+    }
+    return {
+      initialTimeSeconds: 600,
+      incrementSeconds: 0,
+      label: '10 dk',
+    };
+  }, [initialGameData, gameData]);
+
   // ─── Yerel oyun motoru (DB snapshot'ıyla başlar) ────────────────────
   const {
     gameState,
@@ -89,14 +111,18 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
     canGoPrevious,
     canGoNext,
   } = useGame({
-    initialTimeSeconds: 0,
-    incrementSeconds: 0,
+    initialTimeSeconds: roomTimeControl.initialTimeSeconds,
+    incrementSeconds: roomTimeControl.incrementSeconds,
+    isInitiallyPaused: !opponentJoined && gameData.status === 'waiting',
     whiteName: initialGameData.white_name,
     blackName: initialGameData.black_name ?? 'Rakip bekleniyor',
     boardRotates: false,
     initialBoard: initialGameData.board_state,
     initialCitadels: initialGameData.citadels_state,
     initialTurn: initialGameData.current_turn || 'white',
+    onGameOver: (winner, reason) => {
+      void syncGameEndWithRating(winner, reason);
+    },
   });
 
   // ─── Materyal avantajı (ScreenPlayView ile aynı türetme) ────────────
