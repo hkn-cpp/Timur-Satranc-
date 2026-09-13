@@ -31,9 +31,15 @@ let cachedClient: SupabaseClient | null = null;
  */
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured()) {
+    // Anahtar asla loglanmaz — yalnızca hangi değişkenin eksik olduğu söylenir.
+    // Vercel'de en yaygın neden: değişken build'DEN SONRA eklendi (Vite VITE_*
+    // değerlerini build anında gömer) → çözüm: Redeploy (önbelleksiz).
     console.error(
-      '[Supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY tanımlı değil. ' +
-        'Çevrim içi oyun kapalı. Kurulum: README → "Çevrim içi oyun kurulumu".'
+      '[Supabase] Çevrim içi oyun kapalı. ' +
+        `VITE_SUPABASE_URL: ${supabaseUrl ? 'tanımlı' : 'EKSİK'}, ` +
+        `VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'tanımlı' : 'EKSİK'}. ` +
+        'Vercel → Settings → Environment Variables (Production + Preview) + Redeploy gerekli. ' +
+        'Kurulum: README → "Çevrim içi oyun kurulumu".'
     );
     return null;
   }
