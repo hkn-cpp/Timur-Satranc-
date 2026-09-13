@@ -78,6 +78,7 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
     handleSelectSquare,
     handleDropMove,
     resolvePromotion,
+    applyRemoteSnapshot,
     goToMove,
     goToPreviousMove,
     goToNextMove,
@@ -95,7 +96,7 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
     boardRotates: false,
     initialBoard: initialGameData.board_state,
     initialCitadels: initialGameData.citadels_state,
-    initialTurn: 'white',
+    initialTurn: initialGameData.current_turn || 'white',
   });
 
   // ─── Materyal avantajı (ScreenPlayView ile aynı türetme) ────────────
@@ -212,20 +213,46 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
     prevLocalCountRef.current = count;
   }, [historyEntries.length, myColor, syncMove]);
 
-  // ─── Rakip hamlesi (MVP) ────────────────────────────────────────────
-  // NOT(v2): Realtime aboneliği gameData.board_state'i günceller, ancak useGame
-  // yerel state'i DB snapshot'ıyla OTOMATİK değiştirilmez. MVP'de tahtayı DB
-  // snapshot'ıyla değiştirmeye çalışmıyoruz (reset/replay riski). Bunun yerine
-  // bildirim + canlı görünüme dönüş yapıyoruz. v2'de useGame'e dokunmadan bir
-  // applyRemoteSnapshot mekanizması eklenecek.
+  // ─── Rakip hamlesi ──────────────────────────────────────────────────
   const prevRemoteCountRef = useRef(initialGameData.move_count);
   useEffect(() => {
     if (gameData.move_count > prevRemoteCountRef.current) {
       prevRemoteCountRef.current = gameData.move_count;
-      showNotification?.('Rakip hamle yaptı', 'info');
+
+      // Son hamleyi rakip yaptıysa yerel motora yansıt
+      if (gameData.last_move && gameData.last_move.player === opponentColor) {
+        const historyEntry: any = {
+          moveNumber: gameData.move_count,
+          turnNumber: gameData.turn_number,
+          player: gameData.last_move.player,
+          notation: gameData.last_move.notation,
+          from: gameData.last_move.from,
+          to: gameData.last_move.to,
+          promotion: (gameData.last_move as any).promotion,
+          boardState: gameData.board_state,
+          citadelsState: gameData.citadels_state,
+          capturedPiecesState: gameData.captured_pieces,
+          isKingSwap: (gameData.last_move as any).isKingSwap,
+        };
+
+        applyRemoteSnapshot({
+          board: gameData.board_state,
+          citadels: gameData.citadels_state,
+          capturedPieces: gameData.captured_pieces,
+          currentTurn: gameData.current_turn,
+          turnNumber: gameData.turn_number,
+          lastMove: gameData.last_move as any,
+          historyEntry,
+          isGameOver: gameData.status === 'ended',
+          winner: gameData.winner,
+          status: gameData.status === 'ended' ? (gameData.end_reason as any) : 'IN_PROGRESS',
+        });
+
+        showNotification?.('Rakip hamle yaptı', 'info');
+      }
       goToLive();
     }
-  }, [gameData.move_count, goToLive, showNotification]);
+  }, [gameData, opponentColor, applyRemoteSnapshot, goToLive, showNotification]);
 
   // ─── Yerel oyun sonu → DB'ye bildir + ELO uygula (oyun başına tek; guard hook'ta) ───
   useEffect(() => {

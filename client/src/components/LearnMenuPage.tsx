@@ -33,6 +33,14 @@ export const LearnMenuPage: FC<LearnMenuPageProps> = ({ onNavigate, showNotifica
       badge: 'Rehber',
       page: 'RULES' as PageState,
     },
+    {
+      id: 'mobile-analysis-btn',
+      label: 'Analiz Motoru',
+      desc: 'Canlı motor değerlendirmesi ve serbest tahta analizi',
+      icon: <Cpu size={40} weight="duotone" />,
+      badge: 'Motor',
+      page: 'SELF_ANALYSIS' as PageState,
+    },
   ];
   return (
     <div className="mobile-screen flex flex-col bg-[#122b1e] relative overflow-hidden select-none">
@@ -129,19 +137,6 @@ export const LearnMenuPage: FC<LearnMenuPageProps> = ({ onNavigate, showNotifica
             ))}
 
             {/* Yakında (kilitli kartlar) */}
-            <div className="rounded-2xl border border-[#e5dcce] bg-[#f5eedc]/50 p-5 flex items-center gap-4 opacity-70">
-              <div className="w-14 h-14 rounded-2xl bg-[#141f1b]/5 border border-[#141f1b]/10 flex items-center justify-center flex-shrink-0">
-                <Cpu size={24} weight="duotone" className="text-[#141f1b]/30" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-batangas text-lg font-bold text-[#141f1b]/40">Analiz Motoru</span>
-                  <Lock size={12} weight="bold" className="text-[#141f1b]/25" />
-                </div>
-                <p className="text-[#141f1b]/30 text-sm mt-0.5">Çok yakında açılıyor</p>
-              </div>
-            </div>
-
             <div className="rounded-2xl border border-[#e5dcce] bg-[#f5eedc]/50 p-5 flex items-center gap-4 opacity-70">
               <div className="w-14 h-14 rounded-2xl bg-[#141f1b]/5 border border-[#141f1b]/10 flex items-center justify-center flex-shrink-0">
                 <Trophy size={24} weight="duotone" className="text-[#141f1b]/30" />

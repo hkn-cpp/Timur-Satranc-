@@ -75,7 +75,7 @@ const TITLES: Record<string, string> = {
   '/game': 'Maç | Timur Satrancı',
   '/online': 'Online Maç | Timur Satrancı',
   '/review': 'Oyun Analizi | Timur Satrancı',
-  '/analysis': 'Kendi Kendine Analiz | Timur Satrancı',
+  '/analysis': 'Analiz Motoru | Timur Satrancı',
 };
 
 export interface NavigateOptions {

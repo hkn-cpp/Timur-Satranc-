@@ -35,7 +35,12 @@ export const DesktopSidebar: FC<DesktopSidebarProps> = ({
       id: 'learn',
       label: 'Öğren',
       icon: <BookOpen size={22} weight="duotone" />,
-      isActive: currentPage === 'LEARN_MENU' || currentPage === 'ROADMAP' || currentPage === 'RULES' || currentPage === 'LESSON_DETAIL',
+      isActive:
+        currentPage === 'LEARN_MENU' ||
+        currentPage === 'ROADMAP' ||
+        currentPage === 'RULES' ||
+        currentPage === 'LESSON_DETAIL' ||
+        currentPage === 'SELF_ANALYSIS',
       onClick: () => onNavigate('LEARN_MENU'),
     },
     {

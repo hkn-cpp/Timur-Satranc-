@@ -24,6 +24,7 @@ import { deserializePosition, type SerializedPosition } from '../worker/protocol
 import { fullEvaluate } from '../engine/fullEvaluation';
 
 export interface SelfAnalysisViewProps {
+  title?: string;
   whiteName?: string;
   blackName?: string;
   initialBoard?: BoardMatrix;
@@ -45,11 +46,12 @@ interface Variation {
 }
 
 /**
- * Kendi Kendine Analiz — serbest sandbox.
+ * Analiz Motoru (Kendi Kendine Analiz) — serbest sandbox.
  * İki taraf da serbestçe oynanabilir, canlı değerlendirme çubuğu ve
  * orijinal maç geçmişine dokunmayan varyasyon ağacı editörü içerir.
  */
 export const SelfAnalysisView: FC<SelfAnalysisViewProps> = ({
+  title = 'Analiz Motoru',
   whiteName = 'Beyaz',
   blackName = 'Siyah',
   initialBoard,
@@ -146,7 +148,7 @@ export const SelfAnalysisView: FC<SelfAnalysisViewProps> = ({
     <div className="mobile-screen flex flex-col justify-between bg-[#153423] text-white relative overflow-hidden select-none">
       <Header
         onBack={onExit}
-        gameTypeTitle="Kendi Kendine Analiz"
+        gameTypeTitle={title}
         historyEntries={game.historyEntries}
         viewedMoveIndex={game.viewedMoveIndex}
         onSelectMove={game.goToMove}

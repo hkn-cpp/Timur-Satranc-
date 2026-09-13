@@ -25,6 +25,7 @@ import { ScreenPlayView } from './views/ScreenPlayView';
 import { BotPlayView } from './views/BotPlayView';
 import { SetupEditorView } from './views/SetupEditorView';
 import { OnlinePlayView } from './views/OnlinePlayView';
+import { SelfAnalysisView } from './views/SelfAnalysisView';
 import type { OnlineGame } from './core/online/roomService';
 import { useResponsive } from './hooks/useResponsive';
 import { BOT_PROFILES, type BotProfileId } from './bot/profiles';
@@ -310,8 +311,8 @@ export const App: React.FC = () => {
       setCurrentPage('PLAY_MENU', { replace: true });
     } else if (currentPage === 'SCREEN_PLAY' && !screenPlayLaunched) {
       setCurrentPage('PLAY_MENU', { replace: true });
-    } else if (currentPage === 'GAME_REVIEW' || currentPage === 'SELF_ANALYSIS') {
-      // Tek başına veri taşımayan sayfalar (inceleme/sandbox yalnızca maç
+    } else if (currentPage === 'GAME_REVIEW') {
+      // Tek başına veri taşımayan sayfalar (inceleme yalnızca maç
       // içi subView olarak yaşar) — boş ekran yerine oyun menüsüne yönlendir.
       setCurrentPage('PLAY_MENU', { replace: true });
     }
@@ -575,6 +576,34 @@ export const App: React.FC = () => {
                   setRulesTab={setRulesTab}
                   selectedPiece={selectedPiece}
                   setSelectedPiece={setSelectedPiece}
+                />
+              )}
+            </div>
+          )}
+
+          {currentPage === 'SELF_ANALYSIS' && (
+            <div className="pointer-events-auto w-full flex-1 flex flex-col">
+              {isDesktop ? (
+                <div className="flex w-full min-h-screen">
+                  <DesktopSidebar
+                    currentPage={currentPage}
+                    onNavigate={setCurrentPage}
+                    onOpenCredits={() => setIsCreditsOpen(true)}
+                    showNotification={showNotification}
+                  />
+                  <div className="flex-1 ml-[var(--sbw)] overflow-y-auto custom-scrollbar">
+                    <SelfAnalysisView
+                      title="Analiz Motoru"
+                      onExit={() => setCurrentPage('LEARN_MENU')}
+                      showNotification={showNotification}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <SelfAnalysisView
+                  title="Analiz Motoru"
+                  onExit={() => setCurrentPage('LEARN_MENU')}
+                  showNotification={showNotification}
                 />
               )}
             </div>

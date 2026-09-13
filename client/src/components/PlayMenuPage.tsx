@@ -96,12 +96,9 @@ export const PlayMenuPage: FC<PlayMenuPageProps> = ({
   const [isCoachOpen, setIsCoachOpen] = useState(false);
   const [isPlayFriendOpen, setIsPlayFriendOpen] = useState(false);
 
-  // Hızlı Karşılaşma Başlat
+  // Hızlı Karşılaşma / Online Başlat
   const handleQuickPlay = () => {
-    if (onStartGame) {
-      const totalSec = selectedTime.initialMinutes * 60;
-      onStartGame('online', totalSec);
-    }
+    setIsPlayFriendOpen(true);
   };
 
   return (

@@ -4,6 +4,7 @@ import {
   BoardPosition,
   CitadelState,
   GameState,
+  GameStatus,
   Move,
   Piece,
   PieceType,
@@ -891,6 +892,68 @@ export function useGame({
     onGameOver?.('draw', 'Beraberlik sağlandı.');
   }, [onGameOver]);
 
+  // Apply Remote Snapshot (Online modda rakip hamlesi veya yeniden senkronizasyon için)
+  const applyRemoteSnapshot = useCallback(
+    (snapshot: {
+      board: BoardMatrix;
+      citadels: CitadelState;
+      capturedPieces?: { white: Piece[]; black: Piece[] };
+      currentTurn: PlayerColor;
+      turnNumber?: number;
+      lastMove?: Move | null;
+      historyEntry?: MoveHistoryEntry;
+      isCheck?: boolean;
+      isCheckmate?: boolean;
+      isStalemate?: boolean;
+      isGameOver?: boolean;
+      winner?: PlayerColor | 'draw' | null;
+      status?: GameStatus;
+      statusReason?: string;
+    }) => {
+      setGameState((prev) => ({
+        ...prev,
+        board: snapshot.board,
+        citadels: snapshot.citadels,
+        capturedPieces: snapshot.capturedPieces ?? prev.capturedPieces,
+        currentTurn: snapshot.currentTurn,
+        turnNumber: snapshot.turnNumber ?? prev.turnNumber,
+        isCheck: snapshot.isCheck ?? prev.isCheck,
+        isCheckmate: snapshot.isCheckmate ?? prev.isCheckmate,
+        isStalemate: snapshot.isStalemate ?? prev.isStalemate,
+        isGameOver: snapshot.isGameOver ?? prev.isGameOver,
+        winner: snapshot.winner !== undefined ? snapshot.winner : prev.winner,
+        status: snapshot.status ?? prev.status,
+        statusReason: snapshot.statusReason ?? prev.statusReason,
+      }));
+
+      if (snapshot.lastMove !== undefined) {
+        setLastMove(snapshot.lastMove);
+      }
+
+      if (snapshot.historyEntry) {
+        const entry = snapshot.historyEntry;
+        setHistoryEntries((prev) => {
+          if (prev.some((e) => e.moveNumber === entry.moveNumber)) {
+            return prev;
+          }
+          return [...prev, entry];
+        });
+      }
+
+      setViewedMoveIndex(null);
+      setSelectedPos(null);
+      setPendingPromotion(null);
+
+      if (snapshot.statusReason) {
+        setStatusText(snapshot.statusReason);
+      } else {
+        const turnName = snapshot.currentTurn === 'white' ? whiteName : blackName;
+        setStatusText(`${turnName} hamle sırası...`);
+      }
+    },
+    [whiteName, blackName]
+  );
+
   return {
     // Live State
     gameState,
@@ -920,6 +983,7 @@ export function useGame({
     handleSelectSquare,
     handleDropMove,
     resolvePromotion,
+    applyRemoteSnapshot,
     goToMove,
     goToPreviousMove,
     goToNextMove,

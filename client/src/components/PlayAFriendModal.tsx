@@ -132,12 +132,6 @@ export const PlayAFriendModal: FC<PlayAFriendModalProps> = ({
             Arkadaşına davet kodu gönder veya onun oluşturduğu odaya katıl!
           </p>
 
-          {!isSupabaseConfigured() && (
-            <div className="bg-amber-500/15 border border-amber-400/40 rounded-xl p-3 text-amber-200 text-xs">
-              Çevrim içi oyun bu sürümde yapılandırılmadı. Oda açmak için Supabase kurulumu gerekli (README → "Çevrim içi oyun kurulumu").
-            </div>
-          )}
-
           {/* İsim Girişi */}
           <div className="bg-[#1a4228] rounded-xl p-3 border border-white/10">
             <label className="text-white/70 text-xs mb-1 block">

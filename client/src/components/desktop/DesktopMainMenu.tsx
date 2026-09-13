@@ -44,35 +44,35 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
     action: () => void;
     badge?: string;
   }[] = [
-    {
-      id: 'bot',
-      title: 'Bota Karşı Oyna',
-      desc: 'Yapay zekâya karşı kendini test et',
-      icon: <Robot size={26} weight="regular" />,
-      action: () => onNavigate('BOT_SELECT'),
-    },
-    {
-      id: 'local',
-      title: 'Ekranda Oyna',
-      desc: 'Aynı cihazda arkadaşına karşı oyna',
-      icon: <Monitor size={26} weight="regular" />,
-      action: onOpenInPersonModal,
-    },
-    {
-      id: 'online',
-      title: 'Çevrimiçi Oyna',
-      desc: 'Davet koduyla arkadaşınla karşılaş',
-      icon: <Globe size={26} weight="regular" />,
-      action: onOpenOnlineModal,
-    },
-    {
-      id: 'custom',
-      title: 'Serbest Dizilim',
-      desc: 'Özel taş dizilimi hazırla & test et',
-      icon: <Sliders size={26} weight="regular" />,
-      action: () => onNavigate('CUSTOM_SETUP'),
-    },
-  ];
+      {
+        id: 'bot',
+        title: 'Bota Karşı Oyna',
+        desc: 'Yapay zekâya karşı kendini test et',
+        icon: <Robot size={26} weight="regular" />,
+        action: () => onNavigate('BOT_SELECT'),
+      },
+      {
+        id: 'local',
+        title: 'Ekranda Oyna',
+        desc: 'Aynı cihazda arkadaşına karşı oyna',
+        icon: <Monitor size={26} weight="regular" />,
+        action: onOpenInPersonModal,
+      },
+      {
+        id: 'online',
+        title: 'Çevrimiçi Oyna',
+        desc: 'Davet koduyla arkadaşınla karşılaş',
+        icon: <Globe size={26} weight="regular" />,
+        action: onOpenOnlineModal,
+      },
+      {
+        id: 'custom',
+        title: 'Serbest Dizilim',
+        desc: 'Özel taş dizilimi hazırla & test et',
+        icon: <Sliders size={26} weight="regular" />,
+        action: () => onNavigate('CUSTOM_SETUP'),
+      },
+    ];
 
   return (
     <div className="flex-1 ml-[var(--sbw)] min-w-0 py-6 flex flex-col min-h-screen justify-between relative z-10 select-none bg-gradient-to-b from-[#0c2417] to-[#081810] text-white overflow-x-clip">
@@ -144,11 +144,12 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
         </div>
       </header>
 
-      {/* ── 2. ANA PANEL (tarihçe+footer dahil: yan kolonlar tüm sayfa boyunca sticky kalır) ── */}
+      {/* ── 2. ANA PANEL ── */}
       <main className="grid grid-cols-1 lg:grid-cols-12 gap-x-4 lg:gap-x-0 gap-y-8 lg:gap-y-0 items-center my-auto w-full min-w-0 relative z-20 px-4 lg:px-0">
 
-        {/* KOLON 1 (kaydırmada ekranda kalır) */}
-        <section className="lg:col-span-4 min-w-0 z-0 flex flex-col gap-6 text-left lg:self-start lg:sticky lg:top-[clamp(90px,7.6vw,110px)] translate-y-[clamp(40px,5.2vw,75px)] lg:pl-[35px]">          <div>
+        {/* KOLON 1: BAŞLIK & EYLEMLER */}
+        <section className="lg:col-span-4 min-w-0 z-0 flex flex-col gap-6 text-left lg:pl-[35px]">
+          <div>
             <h1 style={{ fontFamily: "'Playfair Display', serif" }} className="text-fluid-hero font-black tracking-tight leading-[1.05] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
               Timur
               <br />
@@ -182,18 +183,9 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
         </section>
 
         {/* KOLON 2: SATRANÇ TAHTASI */}
-        <section className="lg:col-span-5 min-w-0 z-0 relative flex items-center justify-center w-full min-h-[clamp(220px,22vw,320px)] overflow-x-clip translate-y-[clamp(30px,13vw,60px)] lg:-translate-x-[10%] lg:translate-y-[clamp(70px,8.6vw,125px)]">
+        <section className="lg:col-span-5 min-w-0 z-0 relative flex items-center justify-center w-full min-h-[clamp(220px,22vw,320px)] overflow-x-clip lg:-translate-x-[10%]">
           <div className="relative w-full flex items-center justify-center">
             <div className="absolute w-[clamp(200px,19.4vw,280px)] h-[clamp(200px,19.4vw,280px)] bg-[radial-gradient(circle,_rgba(0,212,196,0.12)_0%,_transparent_70%)] rounded-full blur-2xl pointer-events-none z-0 animate-pulse" />
-
-            {/* Arka plan görseli — tahtanın arkasında, çap viewport'a sığar */}
-            <img
-              src={timurArkaImg}
-              alt=""
-              aria-hidden
-              className="absolute top-1/2 left-1/2 max-w-none aspect-square object-contain pointer-events-none z-0 select-none"
-              style={{ width: 'calc(min(110%, 64vh) * 1.1)', transform: 'translate(-50%, -47%)' }}
-            />
 
             <img
               src={chessboardImg}
@@ -203,8 +195,8 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
           </div>
         </section>
 
-        {/* KOLON 3: OYUN MODLARI (kaydırmada ekranda kalır) */}
-        <section className="lg:col-span-3 min-w-0 z-0 flex flex-col gap-4 lg:self-start lg:sticky lg:top-[clamp(90px,7.6vw,110px)] translate-y-[clamp(40px,5.2vw,75px)] lg:pr-[25px] min-[2000px]:max-w-[420px] min-[2000px]:justify-self-end">
+        {/* KOLON 3: OYUN MODLARI */}
+        <section className="lg:col-span-3 min-w-0 z-0 flex flex-col gap-4 lg:pr-[25px] min-[2000px]:max-w-[420px] min-[2000px]:justify-self-end">
 
           {gameModeCards.map((card) => (
             <button
@@ -253,151 +245,151 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
 
         </section>
 
-      {/* ── 3. TARİHÇE: TİMUR SATRANCI NEDİR? (panelsiz) ── */}
-      <section className="lg:col-span-12 mt-[clamp(200px,61vw,300px)] lg:mt-[clamp(210px,18.75vw,320px)] mb-0 relative z-20 w-full max-w-3xl mx-auto flex flex-col items-center text-center gap-5 py-8 select-none">
-        <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#00d4c4]">
-          14. Yüzyıldan Günümüze
-        </span>
-        <h2 className="font-batangas text-fluid-h1 font-black text-white leading-tight">
-          Köklü Bir Miras
-        </h2>
-        <p className="text-fluid-body text-[#A7BDB1] leading-relaxed max-w-2xl">
-          Timur Satrancı (Şatranj-ı Tîmûrî), 14. yüzyılda Büyük Timur'un sarayında
-          doğmuş tarihin en zengin satranç varyasyonudur. Standart satrancın 8×8
-          tahtası yerine 10×11 büyüklüğünde, ek olarak 2 adet hisar ile 112 karelik bir tahtada oynanır.
-        </p>
-        <p className="text-fluid-body text-[#A7BDB1] leading-relaxed max-w-2xl">
-          Deve, Zürafa, Mancınık ve Fers gibi özel taşlarıyla stratejik derinliği
-          katlanan oyun, İpek Yolu üzerinden tüm Orta Asya'ya yayılmıştır.
-        </p>
+        {/* ── 3. TARİHÇE: TİMUR SATRANCI NEDİR? (panelsiz) ── */}
+        <section className="lg:col-span-12 mt-16 lg:mt-24 mb-0 relative z-20 w-full max-w-3xl mx-auto flex flex-col items-center text-center gap-5 py-8 select-none">
+          <span className="text-xs font-bold uppercase tracking-[0.3em] text-[#00d4c4]">
+            14. Yüzyıldan Günümüze
+          </span>
+          <h2 className="font-batangas text-fluid-h1 font-black text-white leading-tight">
+            Köklü Bir Miras
+          </h2>
+          <p className="text-fluid-body text-[#A7BDB1] leading-relaxed max-w-2xl">
+            Timur Satrancı (Şatranj-ı Tîmûrî), 14. yüzyılda Büyük Timur'un sarayında
+            doğmuş tarihin en zengin satranç varyasyonudur. Standart satrancın 8×8
+            tahtası yerine 10×11 büyüklüğünde, ek olarak 2 adet hisar ile 112 karelik bir tahtada oynanır.
+          </p>
+          <p className="text-fluid-body text-[#A7BDB1] leading-relaxed max-w-2xl">
+            Deve, Zürafa, Mancınık ve Fers gibi özel taşlarıyla stratejik derinliği
+            katlanan oyun, İpek Yolu üzerinden tüm Orta Asya'ya yayılmıştır.
+          </p>
 
-        {/* Veriler */}
-        <div className="flex items-stretch justify-center gap-6 sm:gap-10 mt-2">
-          {[
-            { value: '112', label: 'Kare' },
-            { value: '28', label: 'Taş' },
-            { value: '13', label: 'Figür' },
-            { value: '2', label: 'Hisar' },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-1">
-              <span className="font-batangas text-[clamp(1.5rem,0.95rem+1.44vw,2.25rem)] font-black text-[#00d4c4]">
-                {stat.value}
-              </span>
-              <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
-                {stat.label}
-              </span>
+          {/* Veriler */}
+          <div className="flex items-stretch justify-center gap-6 sm:gap-10 mt-2">
+            {[
+              { value: '112', label: 'Kare' },
+              { value: '28', label: 'Taş' },
+              { value: '13', label: 'Figür' },
+              { value: '2', label: 'Hisar' },
+            ].map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center gap-1">
+                <span className="font-batangas text-[clamp(1.5rem,0.95rem+1.44vw,2.25rem)] font-black text-[#00d4c4]">
+                  {stat.value}
+                </span>
+                <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => onNavigate('RULES')}
+            className="mt-3 bg-[#00d4c4] hover:bg-[#00c4b4] active:scale-95 text-[#0d2818] font-batangas font-bold text-lg py-3 px-8 rounded-2xl cursor-pointer transition-all duration-300 shadow-[0_4px_16px_rgba(0,212,196,0.25)]"
+          >
+            Kuralları Öğren →
+          </button>
+        </section>
+
+        {/* ── 4. ALT İSTATİSTİK BARI ── */}
+        <footer className="lg:col-span-12 mt-[70px] lg:mx-[30px] relative z-20">
+
+          <div className="bg-black/35 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-md shadow-xl">
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+              {/* İstatistik 1 */}
+              <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
+
+                <div className="p-2.5 bg-blue-500/20 text-blue-300 rounded-xl flex-shrink-0 ring-1 ring-blue-400/30">
+                  <Users size={22} weight="fill" />
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
+                    1000
+                  </span>
+                  <span className="text-[#A7BDB1] text-[11px] font-semibold">
+                    Aktif Oyuncu
+                  </span>
+                </div>
+              </div>
+
+              {/* İstatistik 2 */}
+              <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
+
+                <div className="p-2.5 bg-amber-500/20 text-amber-300 rounded-xl flex-shrink-0 ring-1 ring-amber-400/30">
+                  <Trophy size={22} weight="fill" />
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
+                    250
+                  </span>
+                  <span className="text-[#A7BDB1] text-[11px] font-semibold">
+                    Turnuva
+                  </span>
+                </div>
+              </div>
+
+              {/* İstatistik 3 */}
+              <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
+
+                <div className="p-2.5 bg-violet-500/20 text-violet-300 rounded-xl flex-shrink-0 ring-1 ring-violet-400/30">
+                  <GraduationCap size={22} weight="fill" />
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
+                    25 Ders
+                  </span>
+                  <span className="text-[#A7BDB1] text-[11px] font-semibold">
+                    70 Bulmaca • 4650 XP
+                  </span>
+                </div>
+              </div>
+
+              {/* İstatistik 4 */}
+              <div className="flex items-center justify-center gap-3.5">
+
+                <div className="p-2.5 bg-emerald-500/20 text-emerald-300 rounded-xl flex-shrink-0 ring-1 ring-emerald-400/30">
+                  <Sparkle size={22} weight="fill" />
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
+                    %90+
+                  </span>
+                  <span className="text-[#A7BDB1] text-[11px] font-semibold">
+                    Memnuniyet Oranı
+                  </span>
+                </div>
+              </div>
+
             </div>
-          ))}
+
+          </div>
+
+        </footer>
+
+        {/* ── Lâgarî Studios imzası (kutudan bağımsız) ── */}
+        <div className="lg:col-span-12 mt-[-8px] lg:mt-6 w-full flex flex-col items-center justify-center gap-1 text-center relative z-20 select-none">
+          <span className="text-[8px] font-semibold tracking-widest uppercase text-white/50">
+            Made by
+          </span>
+          <a
+            href="https://lagari.tr"
+            target="_blank"
+            rel="noreferrer"
+            title="Lâgarî Studios"
+            className="cursor-pointer transition-all duration-300 opacity-70 hover:opacity-100 hover:scale-[1.02]"
+          >
+            <img
+              src={lagariImg}
+              alt="Lâgarî Studios"
+              className="h-12 w-auto object-contain"
+            />
+          </a>
         </div>
-
-        <button
-          onClick={() => onNavigate('RULES')}
-          className="mt-3 bg-[#00d4c4] hover:bg-[#00c4b4] active:scale-95 text-[#0d2818] font-batangas font-bold text-lg py-3 px-8 rounded-2xl cursor-pointer transition-all duration-300 shadow-[0_4px_16px_rgba(0,212,196,0.25)]"
-        >
-          Kuralları Öğren →
-        </button>
-      </section>
-
-      {/* ── 4. ALT İSTATİSTİK BARI ── */}
-      <footer className="lg:col-span-12 mt-[70px] lg:mx-[30px] relative z-20">
-
-        <div className="bg-black/35 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-md shadow-xl">
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-          {/* İstatistik 1 */}
-          <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
-
-            <div className="p-2.5 bg-blue-500/20 text-blue-300 rounded-xl flex-shrink-0 ring-1 ring-blue-400/30">
-              <Users size={22} weight="fill" />
-            </div>
-
-            <div className="flex flex-col text-left">
-              <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
-                10.000+
-              </span>
-              <span className="text-[#A7BDB1] text-[11px] font-semibold">
-                Aktif Oyuncu
-              </span>
-            </div>
-          </div>
-
-          {/* İstatistik 2 */}
-          <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
-
-            <div className="p-2.5 bg-amber-500/20 text-amber-300 rounded-xl flex-shrink-0 ring-1 ring-amber-400/30">
-              <Trophy size={22} weight="fill" />
-            </div>
-
-            <div className="flex flex-col text-left">
-              <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
-                1.250
-              </span>
-              <span className="text-[#A7BDB1] text-[11px] font-semibold">
-                Turnuva
-              </span>
-            </div>
-          </div>
-
-          {/* İstatistik 3 */}
-          <div className="flex items-center justify-center gap-3.5 relative md:after:content-[''] md:after:absolute md:after:right-[-8px] md:after:top-[20%] md:after:h-[60%] md:after:w-[1px] md:after:bg-white/10 last:after:content-none">
-
-            <div className="p-2.5 bg-violet-500/20 text-violet-300 rounded-xl flex-shrink-0 ring-1 ring-violet-400/30">
-              <GraduationCap size={22} weight="fill" />
-            </div>
-
-            <div className="flex flex-col text-left">
-              <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
-                25 Ders
-              </span>
-              <span className="text-[#A7BDB1] text-[11px] font-semibold">
-                70 Bulmaca • 4650 XP
-              </span>
-            </div>
-          </div>
-
-          {/* İstatistik 4 */}
-          <div className="flex items-center justify-center gap-3.5">
-
-            <div className="p-2.5 bg-emerald-500/20 text-emerald-300 rounded-xl flex-shrink-0 ring-1 ring-emerald-400/30">
-              <Sparkle size={22} weight="fill" />
-            </div>
-
-            <div className="flex flex-col text-left">
-              <span className="text-lg xl:text-xl font-extrabold text-white leading-tight">
-                %90+
-              </span>
-              <span className="text-[#A7BDB1] text-[11px] font-semibold">
-                Memnuniyet Oranı
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-        </div>
-
-      </footer>
-
-      {/* ── Lâgarî Studios imzası (kutudan bağımsız) ── */}
-      <div className="lg:col-span-12 mt-[-8px] lg:mt-6 w-full flex flex-col items-center justify-center gap-1 text-center relative z-20 select-none">
-        <span className="text-[8px] font-semibold tracking-widest uppercase text-white/50">
-          Made by
-        </span>
-        <a
-          href="https://lagari.tr"
-          target="_blank"
-          rel="noreferrer"
-          title="Lâgarî Studios"
-          className="cursor-pointer transition-all duration-300 opacity-70 hover:opacity-100 hover:scale-[1.02]"
-        >
-          <img
-            src={lagariImg}
-            alt="Lâgarî Studios"
-            className="h-12 w-auto object-contain"
-          />
-        </a>
-      </div>
       </main>
     </div>
   );
