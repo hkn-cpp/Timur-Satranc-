@@ -18,6 +18,7 @@ import chessboardImg from '../../assets/board.png';
 import timurArkaImg from '../../assets/timur-arka.png';
 import okulLogo from '../../assets/okulLogo.png';
 import lagariImg from '../../assets/lagari.png';
+import { MusicToggleButton } from '../MusicToggleButton';
 
 interface DesktopMainMenuProps {
   onNavigate: (page: PageState) => void;
@@ -111,8 +112,10 @@ export const DesktopMainMenu: FC<DesktopMainMenuProps> = ({
           </div>
         </button>
 
-        {/* Sağ: Kullanıcı Profili & Giriş Butonu */}
+        {/* Sağ: Müzik + Kullanıcı Profili & Giriş Butonu */}
         <div className="flex items-center gap-4">
+
+          <MusicToggleButton variant="desktop" />
 
           <div className="flex items-center gap-3 bg-black/30 px-4 py-2 rounded-2xl border border-white/10 shadow-lg">
             <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center border border-white/20 text-white">

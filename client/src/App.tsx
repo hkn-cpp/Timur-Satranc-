@@ -29,6 +29,7 @@ import { SelfAnalysisView } from './views/SelfAnalysisView';
 import type { OnlineGame } from './core/online/roomService';
 import { useResponsive } from './hooks/useResponsive';
 import { BOT_PROFILES, type BotProfileId } from './bot/profiles';
+import { ensureMusicPlaying, initBackgroundMusic } from './utils/music';
 
 // ─── Custom Setup Config ─────────────────────────────────────────────────────
 interface CustomSetupConfig {
@@ -299,6 +300,21 @@ export const App: React.FC = () => {
     setPendingSetupEntry(null);
     setCurrentPage('SCREEN_PLAY');
   };
+
+  // ─── Arka plan müziği: App ömründe BİR KEZ kurulur, bir daha dokunulmaz ───
+  // Audio nesneleri modül singleton'ında yaşar; sayfa geçişleri (state)
+  // müziği kesmez / başa sarmaz. İlk kullanıcı etkileşiminde autoplay
+  // kilidi açılır, sonrası tüm sayfalarda kesintisiz döngüyle sürer.
+  useEffect(() => {
+    initBackgroundMusic();
+    const unlock = () => ensureMusicPlaying();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
   // Derin link / refresh koruması: config'siz maç ekranına düşülürse
   // (örn. /game veya /online'a direkt girildiyse) /play'e yönlendir.

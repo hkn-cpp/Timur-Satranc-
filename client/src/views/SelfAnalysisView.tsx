@@ -12,6 +12,7 @@ import {
 import { useGame } from '../hooks/useGame';
 import { Header } from '../components/game/Header';
 import { BoardContainer } from '../components/game/BoardContainer';
+import { useCheckFlash } from '../components/board/CheckFlash';
 import { BottomToolbar } from '../components/game/BottomToolbar';
 import { BoardMatrix, CitadelState, PlayerColor } from '../types/chess';
 import {
@@ -99,6 +100,9 @@ export const SelfAnalysisView: FC<SelfAnalysisViewProps> = ({
   const whiteShare = evalToWhiteShare(liveEval);
 
   const currentMoveNo = game.historyEntries.length;
+
+  // Şah çekilince tahtada 0.4sn "ŞAH!" bildirimi
+  const showCheckFlash = useCheckFlash(game.historyEntries);
 
   const addVariation = () => {
     const id = Date.now();
@@ -195,6 +199,7 @@ export const SelfAnalysisView: FC<SelfAnalysisViewProps> = ({
           flipped={flipped}
           onSquareClick={game.handleSelectSquare}
           onDropMove={game.handleDropMove}
+          showCheckFlash={showCheckFlash}
         />
         </div>
 

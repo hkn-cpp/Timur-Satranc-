@@ -19,6 +19,7 @@ import {
   processPawnPromotion,
 } from '../core/engine/moveRules';
 import { generateMoveNotation } from '../core/notation';
+import { playMoveSound } from '../utils/sound';
 import type { BotProfileId } from '../bot/profiles';
 import { getSharedEngineClient } from '../worker/engineClient';
 import { createBrowserWorker, isWorkerSupported } from '../worker/createBrowserWorker';
@@ -472,6 +473,9 @@ export function useGame({
         };
 
         setHistoryEntries((prevEntries) => [...prevEntries, historyEntry]);
+
+        // Ses: şah/mat > yeme > rastgele normal hamle (tüm oyun ekranları)
+        playMoveSound(historyEntry);
 
         // Save history for undo
         setHistoryStack((h) => [

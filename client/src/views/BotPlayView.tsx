@@ -1,6 +1,7 @@
 import React, { FC, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useGame } from '../hooks/useGame';
 import { BoardGrid } from '../components/board/BoardGrid';
+import { useCheckFlash } from '../components/board/CheckFlash';
 import { GameOverModal } from '../components/game/GameOverModal';
 import { PromotionModal } from '../components/board/PromotionModal';
 import { GameReviewView } from './GameReviewView';
@@ -262,6 +263,9 @@ export const BotPlayView: FC<BotPlayViewProps> = ({
     setHintMove(null);
   }, [gameState.moveHistory.length]);
 
+  // Şah çekilince tahtada 0.4sn "ŞAH!" bildirimi
+  const showCheckFlash = useCheckFlash(historyEntries);
+
   // Oyun sonu ve taç kaydetme
   useEffect(() => {
     if (gameState.isGameOver) {
@@ -428,6 +432,7 @@ export const BotPlayView: FC<BotPlayViewProps> = ({
             flipped={humanSide === 'black'}
             onSquareClick={handleSelectSquare}
             onDropMove={handleDropMove}
+            showCheckFlash={showCheckFlash}
           />
         </div>
 

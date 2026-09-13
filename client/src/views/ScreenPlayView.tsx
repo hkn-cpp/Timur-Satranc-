@@ -6,6 +6,7 @@ import { BoardContainer } from '../components/game/BoardContainer';
 import { BottomToolbar } from '../components/game/BottomToolbar';
 import { GameOverModal, GameOverMode } from '../components/game/GameOverModal';
 import { PromotionModal } from '../components/board/PromotionModal';
+import { useCheckFlash } from '../components/board/CheckFlash';
 import { GameReviewView } from './GameReviewView';
 import { SelfAnalysisView } from './SelfAnalysisView';
 import { defaultMaterialCalculator } from '../core/material/MaterialCalculator';
@@ -132,6 +133,9 @@ export const ScreenPlayView: FC<ScreenPlayViewProps> = ({
       blackAdvantage: res.leader === 'black' ? res.advantage : 0,
     };
   }, [displayedCapturedPieces]);
+
+  // Şah çekilince tahtada 0.4sn "ŞAH!" bildirimi
+  const showCheckFlash = useCheckFlash(historyEntries);
 
   // Yeni oyun sonu geldiğinde modalı tekrar göster ve bot modunda kazanıldıysa taç kaydet
   useEffect(() => {
@@ -280,6 +284,7 @@ export const ScreenPlayView: FC<ScreenPlayViewProps> = ({
           boardRotates={boardRotates}
           onSquareClick={handleSelectSquare}
           onDropMove={handleDropMove}
+          showCheckFlash={showCheckFlash}
         />
 
         {/* Alt Oyuncu (Beyaz / hknclp) */}

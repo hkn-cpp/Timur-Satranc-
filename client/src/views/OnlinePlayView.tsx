@@ -8,6 +8,7 @@ import { BoardContainer } from '../components/game/BoardContainer';
 import { BottomToolbar } from '../components/game/BottomToolbar';
 import { GameOverModal } from '../components/game/GameOverModal';
 import { PromotionModal } from '../components/board/PromotionModal';
+import { useCheckFlash } from '../components/board/CheckFlash';
 import { GameReviewView } from './GameReviewView';
 import { SelfAnalysisView } from './SelfAnalysisView';
 import { defaultMaterialCalculator } from '../core/material/MaterialCalculator';
@@ -133,6 +134,9 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
       blackAdvantage: res.leader === 'black' ? res.advantage : 0,
     };
   }, [displayedCapturedPieces]);
+
+  // Şah çekilince tahtada 0.4sn "ŞAH!" bildirimi
+  const showCheckFlash = useCheckFlash(historyEntries);
 
   // ─── Renk / isim / süre eşleşmesi ───────────────────────────────────
   const opponentColor: PlayerColor = myColor === 'white' ? 'black' : 'white';
@@ -541,6 +545,7 @@ export const OnlinePlayView: FC<OnlinePlayViewProps> = ({
           flipped={myColor === 'black'}
           onSquareClick={isInteractive ? handleSelectSquare : () => {}}
           onDropMove={isInteractive ? handleDropMove : undefined}
+          showCheckFlash={showCheckFlash}
         />
 
         <PlayerCard

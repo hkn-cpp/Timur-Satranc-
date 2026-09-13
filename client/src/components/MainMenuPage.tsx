@@ -4,6 +4,7 @@ import { PageState, NotificationType } from '../types';
 import logoImg from '../assets/logo.png';
 import okulLogo from '../assets/okulLogo.png';
 import chessboardImg from '../assets/board.png';
+import { MusicToggleButton } from './MusicToggleButton';
 
 interface MainMenuPageProps {
   onNavigate: (page: PageState) => void;
@@ -52,14 +53,17 @@ export const MainMenuPage: FC<MainMenuPageProps> = ({ onNavigate, onOpenCredits,
           Satrancı
         </h1>
 
-        <button
-          id="mobile-settings-btn"
-          onClick={() => showNotification('Ayarlar yakında açılıyor!', 'info')}
-          className="mobile-icon-btn"
-          aria-label="Ayarlar"
-        >
-          <Gear size={24} weight="regular" />
-        </button>
+        <div className="flex items-center gap-2">
+          <MusicToggleButton variant="mobile-icon" />
+          <button
+            id="mobile-settings-btn"
+            onClick={() => showNotification('Ayarlar yakında açılıyor!', 'info')}
+            className="mobile-icon-btn"
+            aria-label="Ayarlar"
+          >
+            <Gear size={24} weight="regular" />
+          </button>
+        </div>
       </div>
 
       {/* Satranç tahtası görseli */}

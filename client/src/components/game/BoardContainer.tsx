@@ -16,6 +16,8 @@ interface BoardContainerProps {
   onSquareDoubleClick?: (pos: BoardPosition) => void;
   onDropMove?: (from: BoardPosition, to: BoardPosition) => void;
   onDropFromPalette?: (type: any, color: any, to: BoardPosition) => void;
+  /** Yeni şah hamlesinde 0.4sn "ŞAH!" bildirimi gösterir. */
+  showCheckFlash?: boolean;
 }
 
 export const BoardContainer: FC<BoardContainerProps> = ({
@@ -32,6 +34,7 @@ export const BoardContainer: FC<BoardContainerProps> = ({
   onSquareDoubleClick,
   onDropMove,
   onDropFromPalette,
+  showCheckFlash = false,
 }) => {
   return (
     <div className="w-full flex-1 flex items-center justify-center py-1 select-none">
@@ -45,6 +48,7 @@ export const BoardContainer: FC<BoardContainerProps> = ({
         boardRotates={boardRotates}
         isEditorMode={isEditorMode}
         flipped={flipped}
+        showCheckFlash={showCheckFlash}
         onSquareClick={onSquareClick}
         onSquareDoubleClick={onSquareDoubleClick}
         onDropMove={onDropMove}

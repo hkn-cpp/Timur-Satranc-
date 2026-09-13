@@ -2,6 +2,7 @@ import React, { FC, useMemo, useState } from 'react';
 import { BoardMatrix, BoardPosition, CitadelState, Move, Piece, PieceType, PlayerColor } from '../../types/chess';
 import { PieceView } from './PieceView';
 import { CitadelBadge } from './CitadelBadge';
+import { CheckFlash } from './CheckFlash';
 import { COLUMN_LETTERS } from '../../core/notation';
 
 interface BoardGridProps {
@@ -15,6 +16,8 @@ interface BoardGridProps {
   boardRotates?: boolean;
   isEditorMode?: boolean;
   flipped?: boolean;
+  /** Yeni şah hamlesinde 0.4sn "ŞAH!" bildirimi gösterir. */
+  showCheckFlash?: boolean;
   onSquareClick: (pos: BoardPosition) => void;
   onSquareDoubleClick?: (pos: BoardPosition) => void;
   onDropMove?: (from: BoardPosition, to: BoardPosition) => void;
@@ -34,6 +37,7 @@ export const BoardGrid: FC<BoardGridProps> = ({
   boardRotates = false,
   isEditorMode = false,
   flipped = false,
+  showCheckFlash = false,
   onSquareClick,
   onSquareDoubleClick,
   onDropMove,
@@ -329,6 +333,12 @@ export const BoardGrid: FC<BoardGridProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Şah bildirimi (tahta çerçevesi içinde ortalanır, tıklamayı engellemez) */}
+        <CheckFlash
+          show={showCheckFlash}
+          style={isRotated ? { transform: 'rotate(180deg)' } : undefined}
+        />
       </div>
     </div>
   );
