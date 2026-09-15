@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "tsc --skipLibCheck --target es2020 --module commonjs --moduleResolution node --outDir build/test-tmp src/core/__tests__/runTests.ts && echo {\"type\":\"commonjs\"} > build/test-tmp/package.json && node build/test-tmp/core/__tests__/runTests.js"
+    "test": "tsc --skipLibCheck --target es2020 --module commonjs --moduleResolution node --outDir build/test-tmp src/core/__tests__/runTests.ts && echo {\"type\":\"commonjs\"} > build/test-tmp/package.json && node build/test-tmp/core/__tests__/runTests.js",
+    "validate:lessons": "tsc --skipLibCheck --target es2020 --module commonjs --moduleResolution node --outDir build/validate-tmp src/learn/validateLessonsCli.ts && echo {\"type\":\"commonjs\"} > build/validate-tmp/package.json && node build/validate-tmp/learn/validateLessonsCli.js"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
