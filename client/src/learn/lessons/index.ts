@@ -1,9 +1,8 @@
 /**
- * FAZ 3+ ders kayıt defteri. FAZ 2'de İÇERİK YOK — yalnızca konvansiyon:
- * her ders `src/learn/lessons/<seviye>-<no>.ts` dosyasında `GuidedLesson`
- * default-export edilir ve buradaki diziye eklenir. Doğrulayıcı
- * (`validateLessonsCli`) bu diziyi okur; madde 1 tam 25 ders ister.
+ * Ders kayıt defteri: 25 rehberli ders `learn/guided/content` içinde yaşar;
+ * doğrulayıcı (`validateLessonsCli`) bu diziyi okur (madde 1 tam 25 ders).
  */
 import type { GuidedLesson } from '../guidedSteps';
+import { GUIDED_LESSONS as CONTENT } from '../guided/content/index';
 
-export const GUIDED_LESSONS: GuidedLesson[] = [];
+export const GUIDED_LESSONS: GuidedLesson[] = CONTENT as unknown as GuidedLesson[];

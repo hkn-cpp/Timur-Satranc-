@@ -3,6 +3,9 @@ import { ArrowLeft, Trophy, CaretRight } from '@phosphor-icons/react';
 import { PageState, NotificationType } from '../types';
 import { LEARN_LEVELS } from '../learn/learnContent';
 import { useLearnProgress } from '../learn/learnProgress';
+import { GUIDED_LESSONS } from '../learn/guided/content/index';
+import { useGuidedProgress } from '../learn/progress/store';
+import { GuidedLessonView } from './learn/guided/GuidedLessonView';
 import { XPBadge } from './learn/XPBadge';
 import { EngineNote } from './learn/EngineNote';
 import { PuzzleStaticCard } from './learn/PuzzleStaticCard';
@@ -30,12 +33,43 @@ export const LessonDetailPage: FC<LessonDetailPageProps> = ({
   showNotification,
 }) => {
   const progress = useLearnProgress();
+  const guidedProgress = useGuidedProgress();
   const level = LEARN_LEVELS.find((l) => l.id === levelId) ?? LEARN_LEVELS[0];
   const safeIdx = Math.max(0, Math.min(lessonIdx, level.lessons.length - 1));
   const lesson = level.lessons[safeIdx];
 
   const [slideIdx, setSlideIdx] = useState(0);
   useEffect(() => setSlideIdx(0), [levelId, lessonIdx, lesson.id]);
+
+  // Birincil akış: rehberli ders içeriği varsa koç motoru açılır.
+  const guidedLesson = GUIDED_LESSONS.find((g) => g.id === lesson.id);
+  if (guidedLesson) {
+    const finishStep = [...guidedLesson.steps].reverse().find((s) => s.kind === 'finish');
+    const badge = finishStep && finishStep.kind === 'finish' ? finishStep.badge : undefined;
+    return (
+      <div className="mobile-screen flex flex-col bg-[#122b1e] relative overflow-hidden select-none">
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+          <GuidedLessonView
+            lesson={guidedLesson}
+            onExit={() => onNavigate('ROADMAP')}
+            onProgress={(lessonId, completedStepIndex) => guidedProgress.recordStep(lessonId, completedStepIndex)}
+            onComplete={(lessonId, xp) => {
+              progress.completeLesson(level.id, lessonId);
+              guidedProgress.completeAward(lessonId, xp, badge);
+              const levelNowDone = level.lessons.every(
+                (d) => d.id === lessonId || progress.isLessonComplete(d.id),
+              );
+              if (levelNowDone) {
+                showNotification(`Tebrikler! ${level.unvan} unvanını kazandın! 🎉 (${level.rozet})`, 'success');
+              } else {
+                showNotification(`Ders ${lessonId} tamamlandı! +${xp} XP 🎉`, 'success');
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const isComplete = progress.isLessonComplete(lesson.id);
   const isLastSlide = slideIdx >= lesson.slides.length - 1;

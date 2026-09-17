@@ -55,6 +55,7 @@ export const CitadelBadge: FC<CitadelBadgeProps> = ({
 
   return (
     <div
+      data-square={isLeft ? 110 : 111}
       onClick={() => onCitadelClick?.(citadelPos)}
       onDoubleClick={() => onCitadelDoubleClick?.(citadelPos)}
       onDragOver={(e) => {

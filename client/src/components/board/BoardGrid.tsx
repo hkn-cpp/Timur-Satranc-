@@ -1,5 +1,5 @@
 import React, { FC, useMemo, useState } from 'react';
-import { BoardMatrix, BoardPosition, CitadelState, Move, Piece, PieceType, PlayerColor } from '../../types/chess';
+import { BoardMatrix, BoardPosition, CitadelState, Move, Piece, PieceType, PlayerColor, PIECE_METADATA } from '../../types/chess';
 import { PieceView } from './PieceView';
 import { CitadelBadge } from './CitadelBadge';
 import { CheckFlash } from './CheckFlash';
@@ -18,6 +18,12 @@ interface BoardGridProps {
   flipped?: boolean;
   /** Yeni şah hamlesinde 0.4sn "ŞAH!" bildirimi gösterir. */
   showCheckFlash?: boolean;
+  /**
+   * Rehberli ders erişilebilirliği (varsayılan kapalı — mevcut ekranlarda
+   * davranış/görünüm değişmez): kareler odaklanabilir olur, Türkçe
+   * aria-label taşır, Enter/Space tıklama ile aynı işlemi yapar.
+   */
+  cellA11y?: boolean;
   onSquareClick: (pos: BoardPosition) => void;
   onSquareDoubleClick?: (pos: BoardPosition) => void;
   onDropMove?: (from: BoardPosition, to: BoardPosition) => void;
@@ -38,6 +44,7 @@ export const BoardGrid: FC<BoardGridProps> = ({
   isEditorMode = false,
   flipped = false,
   showCheckFlash = false,
+  cellA11y = false,
   onSquareClick,
   onSquareDoubleClick,
   onDropMove,
@@ -178,7 +185,10 @@ export const BoardGrid: FC<BoardGridProps> = ({
         />
 
         {/* 11x10 Inner Board Grid */}
-        <div className="w-full h-full grid grid-rows-10 border border-[#2b180d] rounded-lg overflow-hidden shadow-inner">
+        <div
+          className="w-full h-full grid grid-rows-10 border border-[#2b180d] rounded-lg overflow-hidden shadow-inner"
+          {...(cellA11y ? { role: 'grid' as const, 'aria-label': 'Timur Satrancı tahtası' } : {})}
+        >
           {rows.map((y) => (
             <div key={y} className="grid grid-cols-11 w-full h-full">
               {cols.map((x) => {
@@ -218,11 +228,27 @@ export const BoardGrid: FC<BoardGridProps> = ({
                 return (
                   <div
                     key={posKey}
+                    data-square={y * 11 + x}
                     onClick={() => onSquareClick({ x, y })}
                     onDoubleClick={() => onSquareDoubleClick?.({ x, y })}
                     onDragOver={(e) => handleDragOver(e, posKey)}
                     onDragLeave={(e) => handleDragLeave(e, posKey)}
                     onDrop={(e) => handleDrop(e, { x, y })}
+                    {...(cellA11y
+                      ? {
+                          role: 'button' as const,
+                          tabIndex: 0,
+                          'aria-label': `${COLUMN_LETTERS[x]}${y + 1}, ${
+                            piece ? PIECE_METADATA[piece.type]?.nameTr ?? piece.type : 'boş kare'
+                          }`,
+                          onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onSquareClick({ x, y });
+                            }
+                          },
+                        }
+                      : {})}
                     className={`relative w-full h-full flex items-center justify-center cursor-pointer transition-colors duration-100 ${
                       isDarkSquare ? 'bg-[#916239]' : 'bg-[#cba476]'
                     } ${

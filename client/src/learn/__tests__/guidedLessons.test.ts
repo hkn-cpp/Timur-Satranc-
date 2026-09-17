@@ -359,7 +359,7 @@ export function runGuidedLessonTests(): TestSummary {
       { kind: 'play', move: { from: sq(10, 9), to: sq(9, 9) } },
       QUIZ,
       { kind: 'awaitMove', accept: [{ from: sq(1, 0), to: sq(2, 0) }], text: 'Devam et.' },
-      { kind: 'expectRejection', text: 'Çapraz dene.', attempt: { from: sq(1, 0), to: sq(1, 1) }, explanation: 'Olmaz.' },
+      { kind: 'expectRejection', text: 'Çapraz dene.', attempt: { from: sq(1, 0), to: sq(2, 1) }, explanation: 'Olmaz.' },
       finish(25),
     ],
   };
@@ -387,6 +387,7 @@ export function runGuidedLessonTests(): TestSummary {
       { kind: 'say', text: 'Terfi.' },
       { kind: 'play', move: { from: sq(0, 8), to: sq(0, 9), expectPromotion: PieceKind.Rook } },
       QUIZ,
+      { kind: 'play', move: { from: BK, to: sq(4, 8) } },
       { kind: 'awaitMove', accept: [{ from: sq(0, 9), to: sq(0, 8) }], text: 'Geri al.' },
       { kind: 'say', text: 'Devam.' },
       { kind: 'expectRejection', text: 'Dene.', attempt: { from: sq(0, 9), to: sq(1, 8) }, explanation: 'Olmaz.' },
