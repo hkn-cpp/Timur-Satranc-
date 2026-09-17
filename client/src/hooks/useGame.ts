@@ -543,8 +543,15 @@ export function useGame({
   // hesaplattırılır; sonuç aynı `executeMoveInternal` yolundan oynanır
   // (kural/notasyon/tarihçe akışı insan hamlesiyle BİREBİR aynıdır).
   // Bayat cevaplar (undo/reset/StrictMode) token + hamle-sayacı ile düşürülür.
+  //
+  // Düşünme gecikmesi: Engine hesabı bittikten sonra, zaman kontrolüne
+  // orantılı bir bekleme süresi eklenir — bot daha doğal hisseder.
+  // Uzun oyunlarda (30 dk) bot daha uzun düşünür, hızlı oyunlarda (1 dk)
+  // daha çabuk oynar. Profil zorluk katsayısı da eklenir (kolay bot
+  // daha hızlı, uzman bot daha yavaş oynar).
   const botReqRef = useRef<{ cancel: () => void } | null>(null);
   const botTokenRef = useRef(0);
+  const botDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!botSide) return;
     if (gameState.isGameOver || isPaused || isViewingHistory) return;
@@ -556,9 +563,14 @@ export function useGame({
     // Bayat isteği iptal et (StrictMode çift-çalıştırma / hızlı reset güvenliği).
     botReqRef.current?.cancel();
     botReqRef.current = null;
+    if (botDelayTimerRef.current !== null) {
+      clearTimeout(botDelayTimerRef.current);
+      botDelayTimerRef.current = null;
+    }
     const myToken = ++botTokenRef.current;
     const snapshot = stateRef.current.gameState;
     const moveNoAtRequest = snapshot.moveHistory.length;
+    const thinkStarted = Date.now();
     setBotThinking(true);
     const req = client.findBestMove(
       legacyGameStateToPosition(snapshot),
@@ -576,8 +588,69 @@ export function useGame({
           setBotThinking(false);
           return;
         }
-        executeRef.current(conv.move, conv.promotionType);
-        setBotThinking(false);
+
+        // ── Zaman kontrolüne orantılı düşünme gecikmesi ─────────────────
+        // Formül: baseDelay = initialTimeSeconds'a orantılı temel süre
+        //         + profil katsayısı (kolay→hızlı, uzman→yavaş)
+        //         + rastgele varyans (robotik hissetmemesi için)
+        // Toplam gecikme engine hesaplama süresini İÇERİR: engine zaten
+        // yeterince düşündüyse ek bekleme azaltılır/sıfırlanır.
+        //
+        // Zaman kontrol bantları (initialTimeSeconds → hedef düşünme süresi):
+        //   1800s (30dk) → ~3-8 sn    |  600s (10dk)  → ~1.5-4 sn
+        //    300s (5dk)  → ~1-2.5 sn  |   60s (1dk)   → ~0.5-1.2 sn
+        //     30s        → ~0.3-0.8 sn
+
+        // Profil zorluk katsayıları: kolay botlar hızlı, uzman yavaş düşünür
+        const profileDelayMultiplier: Record<string, number> = {
+          'I':   0.5,   // Çok Kolay — hızlı oynar
+          'II':  0.7,   // Kolay
+          'III': 1.0,   // Orta — referans
+          'IV':  1.3,   // Zor — biraz daha uzun düşünür
+          'V':   1.6,   // Uzman — en uzun düşünür
+        };
+        const profileMult = profileDelayMultiplier[botProfileId] ?? 1.0;
+
+        // Temel gecikme (ms): zaman kontrolünün karekökü ile orantılı ölçekleme.
+        // sqrt ölçekleme çok uzun oyunlarda aşırı beklemeyi önler.
+        // Referans: sqrt(600) ≈ 24.5 → baseMs ≈ 24.5 * 80 ≈ 1960ms
+        const baseMs = Math.sqrt(Math.max(10, initialTimeSeconds)) * 80;
+
+        // Rastgele varyans: ±%40 (her hamle farklı sürede düşünülür)
+        const randomFactor = 0.6 + Math.random() * 0.8; // 0.6 — 1.4 arası
+
+        // Hedef toplam düşünme süresi (engine hesaplama dahil)
+        const targetThinkMs = baseMs * profileMult * randomFactor;
+
+        // Engine zaten ne kadar süre harcadı?
+        const elapsed = Date.now() - thinkStarted;
+
+        // Ek bekleme = hedef - geçen süre (negatifse 0 = anında oyna)
+        const extraDelay = Math.max(0, Math.round(targetThinkMs - elapsed));
+
+        if (extraDelay <= 50) {
+          // Anında oyna (50ms altı gecikme anlamsız)
+          executeRef.current(conv.move, conv.promotionType);
+          setBotThinking(false);
+        } else {
+          // Gecikme sonrası oyna — düşünme göstergesi açık kalır
+          botDelayTimerRef.current = setTimeout(() => {
+            botDelayTimerRef.current = null;
+            // Gecikme sırasında durum değişmiş olabilir — tekrar kontrol et
+            if (botTokenRef.current !== myToken) return;
+            const snapAfterDelay = stateRef.current.gameState;
+            if (snapAfterDelay.isGameOver || snapAfterDelay.currentTurn !== botSide) {
+              setBotThinking(false);
+              return;
+            }
+            if (snapAfterDelay.moveHistory.length !== moveNoAtRequest) {
+              setBotThinking(false);
+              return;
+            }
+            executeRef.current(conv.move, conv.promotionType);
+            setBotThinking(false);
+          }, extraDelay);
+        }
       },
       () => {
         // cancel/hata: oyun akışı bozulmaz, sadece düşünme göstergesi iner
@@ -587,8 +660,12 @@ export function useGame({
     return () => {
       botReqRef.current?.cancel();
       botReqRef.current = null;
+      if (botDelayTimerRef.current !== null) {
+        clearTimeout(botDelayTimerRef.current);
+        botDelayTimerRef.current = null;
+      }
     };
-  }, [botSide, botProfileId, gameState, isPaused, isViewingHistory]);
+  }, [botSide, botProfileId, gameState, isPaused, isViewingHistory, initialTimeSeconds]);
   const goToMove = useCallback((index: number | null) => {
     setSelectedPos(null);
     const count = historyEntries.length;
