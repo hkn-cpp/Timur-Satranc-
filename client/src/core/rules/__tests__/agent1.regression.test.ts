@@ -114,7 +114,7 @@ export function runAgent1RegressionTests(): TestSummary {
     ok(isCheck(fwd, 'white') === false, 'R1e: düz-ilerideki şah şah-DEĞİL');
   }
 
-  // ---- R2 relocation-yakalama (P0) ----
+  // ---- R2 v3 bekleme-yakalama (P0 relocation kalktı; K3/K4) ----
   {
     const pos = mkPos('white', [
       { sq: tq(10, 0), kind: PieceKind.King, side: 'white' },
@@ -123,17 +123,13 @@ export function runAgent1RegressionTests(): TestSummary {
       { sq: tq(5, 9), kind: PieceKind.Rook, side: 'black' },
     ]);
     const cap = generateLegalMoves(pos).find((m) => m.from === tq(4, 8) && m.to === tq(5, 9));
-    ok(cap !== undefined && cap.specialFlags.includes(MoveSpecialFlag.Relocation), 'R2a: relocation-yakalama üretilir');
+    ok(cap !== undefined && !cap.specialFlags.includes(MoveSpecialFlag.Relocation), 'R2a: v3 varış-yakalama relocation YOK (yerinde bekler)');
     if (cap) {
       const after = makeMove(pos, cap);
-      ok((after.board[tq(5, 9)] as Piece | null) === null, 'R2b: `to` karesindeki düşman kalkar');
-      let landing = -1;
-      for (let i = 0; i < 112; i++) {
-        const p = after.board[i] as Piece | null;
-        if (p && p.kind === PieceKind.Pawn && p.side === 'white' && i !== tq(10, 0)) landing = i;
-      }
-      ok(landing !== -1 && landing !== tq(5, 9) && landing !== tq(4, 8), `R2c: piyon güvenli-karede (landing=${landing})`);
-      ok((after.board[landing] as Piece | null)?.pawnStage === 1, 'R2d: kademe 1 olur');
+      const stayed = after.board[tq(5, 9)] as Piece | null;
+      ok(stayed?.kind === PieceKind.Pawn && stayed?.side === 'white', 'R2b: `to` karesinde artık bekleyen beyaz piyon durur');
+      ok(stayed?.waiting === true, 'R2c: varış-yakalama sonrası bekleme başlar (landing=varış karesi)');
+      ok((after.board[tq(5, 9)] as Piece | null)?.pawnStage === 1, 'R2d: kademe 1 olur');
       ok(after.flags.halfMoveClock === 0, 'R2e: yakalama saati sıfırlar');
       // InPlace + undo ikisini de restore eder:
       const p2 = mkPos('white', [
@@ -145,21 +141,21 @@ export function runAgent1RegressionTests(): TestSummary {
       const b0 = JSON.stringify(p2.board);
       const h0 = p2.zobristHash;
       const u = makeMoveInPlace(p2, cap);
-      ok((p2.board[tq(5, 9)] as Piece | null) === null, 'R2f: in-place `to` temizlenir');
+      ok((p2.board[tq(5, 9)] as Piece | null)?.waiting === true, 'R2f: in-place varış bekleyen piyon olur');
       undoMoveInPlace(p2, cap, u);
       ok(JSON.stringify(p2.board) === b0 && p2.zobristHash === h0, 'R2g: undo `to`+`landing`+`from` restore eder');
     }
-    // Sessiz relocation (yakalamasız) regresyonu:
+    // Sessiz varış (yakalamasız) v3: yerinde bekler.
     const q = mkPos('white', [
       { sq: tq(10, 0), kind: PieceKind.King, side: 'white' },
       { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
       { sq: tq(5, 8), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn },
     ]);
     const qm = generateLegalMoves(q).find((m) => m.from === tq(5, 8));
-    ok(qm !== undefined && qm.specialFlags.includes(MoveSpecialFlag.Relocation), 'R2h: sessiz relocation bayrağı korunur');
+    ok(qm !== undefined && !qm.specialFlags.includes(MoveSpecialFlag.Relocation), 'R2h: v3 sessiz varışta relocation YOK');
     if (qm) {
       const qa = makeMove(q, qm);
-      ok((qa.board[tq(5, 9)] as Piece | null) === null, 'R2i: sessizde hedef boş kalır');
+      ok((qa.board[tq(5, 9)] as Piece | null)?.waiting === true, 'R2i: sessizde hedef bekleyen piyonla dolar');
     }
   }
 

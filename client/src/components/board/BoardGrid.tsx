@@ -24,6 +24,9 @@ interface BoardGridProps {
    * aria-label taşır, Enter/Space tıklama ile aynı işlemi yapar.
    */
   cellA11y?: boolean;
+  /** v3 K12: kilitli hisar görseli (sol/sağ cep). Varsayılan kapalı. */
+  sealedLeft?: boolean;
+  sealedRight?: boolean;
   onSquareClick: (pos: BoardPosition) => void;
   onSquareDoubleClick?: (pos: BoardPosition) => void;
   onDropMove?: (from: BoardPosition, to: BoardPosition) => void;
@@ -45,6 +48,8 @@ export const BoardGrid: FC<BoardGridProps> = ({
   flipped = false,
   showCheckFlash = false,
   cellA11y = false,
+  sealedLeft = false,
+  sealedRight = false,
   onSquareClick,
   onSquareDoubleClick,
   onDropMove,
@@ -143,6 +148,7 @@ export const BoardGrid: FC<BoardGridProps> = ({
           side="left"
           targetRow={8}
           piece={citadels.blackCitadelPiece}
+          sealed={sealedLeft}
           isValidMoveTarget={validMoveMap.has('citadel-left')}
           isDragOver={dragOverPos === 'citadel-left'}
           isDraggingSource={draggingFromKey === 'citadel-left'}
@@ -166,6 +172,7 @@ export const BoardGrid: FC<BoardGridProps> = ({
           side="right"
           targetRow={1}
           piece={citadels.whiteCitadelPiece}
+          sealed={sealedRight}
           isValidMoveTarget={validMoveMap.has('citadel-right')}
           isDragOver={dragOverPos === 'citadel-right'}
           isDraggingSource={draggingFromKey === 'citadel-right'}
@@ -240,7 +247,7 @@ export const BoardGrid: FC<BoardGridProps> = ({
                           tabIndex: 0,
                           'aria-label': `${COLUMN_LETTERS[x]}${y + 1}, ${
                             piece ? PIECE_METADATA[piece.type]?.nameTr ?? piece.type : 'boş kare'
-                          }`,
+                          }${piece?.waiting === true ? ' (bekleyen, dokunulmaz)' : ''}`,
                           onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
@@ -300,11 +307,14 @@ export const BoardGrid: FC<BoardGridProps> = ({
                     {/* Piece View with Slide Animation */}
                     {piece && (
                       <div
-                        draggable
+                        draggable={piece.waiting !== true}
                         style={slideStyle}
                         className={`w-full h-full flex items-center justify-center transition-opacity ${
-                          isDraggingSource ? 'opacity-30' : 'opacity-100'
-                        } ${isLastMoveDestination ? 'animate-piece-slide' : ''}`}
+                          isDraggingSource ? 'opacity-30' : piece.waiting === true ? 'opacity-70' : 'opacity-100'
+                        } ${isLastMoveDestination ? 'animate-piece-slide' : ''} ${
+                          // v3 K5: bekleyen piyade dokunulmaz — kesik halka ile belli olur.
+                          piece.waiting === true ? 'rounded-md ring-2 ring-inset ring-dashed ring-sky-300' : ''
+                        }`}
                         onDragStart={(e) => {
                           e.stopPropagation();
                           setDraggingFromKey(posKey);

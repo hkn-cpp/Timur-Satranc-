@@ -14,6 +14,7 @@ import {
   PieceKind,
   type Position,
 } from '../core/position/Position';
+import { royalSquares } from '../core/rules/shared';
 
 export const EVALUATION_WEIGHTS = {
   material: 1.0, // v0.1'de kullanılan TEK bileşen
@@ -37,20 +38,31 @@ export const PIECE_VALUES_CP: Record<PieceKind, number> = {
   [PieceKind.Giraffe]: 350,
   [PieceKind.Picket]: 150, // en zayıf figür varsayımı
   [PieceKind.Pawn]: 100, // 11 piyade türü için tek tip başlangıç değeri
-  // --- LEGACY EXTENSION: spec §7.6'da Prince YOK (terfi ürünü, §7.1 notu).
-  // Değersiz bırakılamazdı (terfili konumlar yanlış okunurdu); legacy bot
-  // tablosundaki 400cp alındı. Self-play kalibrasyonunda revize edilecek.
-  [PieceKind.Prince]: 400,
+  // --- v3 (terfi ekosistemi K13): Şehzade 3.0, Maceracı Şah 3.0.
+  // Şehzade'nin eski 400cp değeri bilinçli değişti (K13 değer matrisi).
+  [PieceKind.Prince]: 300,
+  [PieceKind.AdventurousKing]: 300,
 };
 
-/** Beyaz-pozitif materyal farkı (cp). Hisar occupant'ları dahildir (board[110/111]). */
+/** Çok-royal durumda Şah'ın sonlu değeri (v3 K13: 8.0). */
+export const MULTI_ROYAL_KING_CP = 800;
+
+/** Beyaz-pozitif materyal farkı (cp). Hisar occupant'ları dahildir (board[110/111]).
+ *  v3 K13: bekleyen piyade 50cp; Şah royal sayısı 1 iken 0 (mevcut), tarafın
+ *  royal sayısı >1 iken 800cp (sonsuz değer aramayı bozardı). */
 export function materialWhiteCp(position: Position): number {
+  const whiteRoyals = royalSquares(position.board, position.citadels, 'white').length;
+  const blackRoyals = royalSquares(position.board, position.citadels, 'black').length;
   let score = 0;
   const board = position.board;
   for (let sq = 0; sq < board.length; sq++) {
     const p = board[sq];
     if (!p) continue;
-    const v = PIECE_VALUES_CP[p.kind] ?? 0;
+    let v = PIECE_VALUES_CP[p.kind] ?? 0;
+    if (p.kind === PieceKind.Pawn && p.waiting === true) v = 50;
+    if (p.kind === PieceKind.King) {
+      v = (p.side === 'white' ? whiteRoyals : blackRoyals) > 1 ? MULTI_ROYAL_KING_CP : 0;
+    }
     score += p.side === 'white' ? v : -v;
   }
   return Math.round(score * EVALUATION_WEIGHTS.material);

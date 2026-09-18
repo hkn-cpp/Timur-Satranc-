@@ -9,6 +9,8 @@ Bu dosya `01-isim-tablosu.md` Bölüm 5'in makine-okunur karşılığıdır.
 - Öncü
 - Talia
 - Piyon
+- Masnu
+- Yedek
 - queen
 - general
 - picket

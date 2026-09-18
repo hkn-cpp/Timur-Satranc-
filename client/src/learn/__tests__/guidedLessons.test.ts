@@ -295,10 +295,10 @@ export function runGuidedLessonTests(): TestSummary {
   const g07c = validateLesson(giraffeOk, CTX);
   ok(!hasRule(g07c, 6), `G07c: zürafa destinations+direction madde 6 sorunsuz (${JSON.stringify(g07c.slice(0, 1))})`);
 
-  /* ---- G08: narrative geçer + ihlal ---- */
+  /* ---- G08: narrative geçer + ihlal (v3: tek narrative 6.5) ---- */
   const narrativeOk: GuidedLesson = {
-    id: '5.2',
-    title: 'Taktik Çatal Işınlanması',
+    id: '6.5',
+    title: 'Yalın Şah (Soyutlama) Zaferi',
     mode: 'narrative',
     startPosition: rookPos(),
     steps: [
@@ -307,7 +307,7 @@ export function runGuidedLessonTests(): TestSummary {
       { kind: 'quiz', question: 'Ne olur?', options: ['A', 'B'], correctIndex: 1, explanation: 'Işın.' },
       { kind: 'show', annotate: [{ kind: 'square', square: sq(0, 0), tone: 'focus' }] },
       { kind: 'teleport', mode: 'demo', ghostTo: sq(5, 5), text: 'Hayalet belirir.' },
-      finish(300),
+      finish(360, 'Altın Hisar & Usta Noyan Sertifikası'),
     ],
   };
   ok(validateLesson(narrativeOk, CTX).length === 0, 'G08a: narrative ders sorunsuz');

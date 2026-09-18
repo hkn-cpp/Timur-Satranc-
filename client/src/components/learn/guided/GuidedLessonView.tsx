@@ -1,7 +1,8 @@
-import React, { FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { WarningCircle } from '@phosphor-icons/react';
 import type { GuidedLesson } from '../../../learn/guided/types';
-import type { SquareIndex } from '../../../core/position/Position';
+import { PieceKind, type SquareIndex } from '../../../core/position/Position';
+import { allForkSquares } from '../../../core/rules/fork';
 import { useGuidedLesson } from '../../../hooks/useGuidedLesson';
 import { AnnotationLayer, type CenterPoint } from '../../board/AnnotationLayer';
 import { GuidedBoard, type BoardInputMode } from './GuidedBoard';
@@ -9,6 +10,7 @@ import { CoachBubble } from './CoachBubble';
 import { StepProgressRail } from './StepProgressRail';
 import { LessonControls } from './LessonControls';
 import { LessonCompleteSheet } from './LessonCompleteSheet';
+import { ForkPanel } from './ForkPanel';
 
 interface GuidedLessonViewProps {
   lesson: GuidedLesson;
@@ -34,6 +36,7 @@ export const GuidedLessonView: FC<GuidedLessonViewProps> = ({ lesson, onExit, on
   const [selected, setSelected] = useState<SquareIndex | null>(null);
   const [showReveal, setShowReveal] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
+  const [forkOpen, setForkOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const [geom, setGeom] = useState<{ centers: Map<SquareIndex, CenterPoint>; size: number; w: number; h: number }>({
     centers: new Map(),
@@ -45,12 +48,46 @@ export const GuidedLessonView: FC<GuidedLessonViewProps> = ({ lesson, onExit, on
   useEffect(() => {
     setSelected(null);
     setShowReveal(false);
+    setForkOpen(false);
   }, [state.index, replayKey]);
 
   useEffect(() => {
     if (replayKey > 0) dispatch({ type: 'START', lesson });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replayKey]);
+
+  // K8: bekleyen piyade + çatal karesi varsa panel önerilir.
+  const forkInfo = useMemo(() => {
+    if (!position) return null;
+    const side = position.sideToMove;
+    const board = position.board as unknown as ({ kind: string; side: string; waiting?: boolean } | null)[];
+    let from: SquareIndex | null = null;
+    for (let sq = 0; sq < 110; sq++) {
+      const p = board[sq];
+      if (p && p.kind === PieceKind.Pawn && p.side === side && p.waiting === true) {
+        from = sq;
+        break;
+      }
+    }
+    if (from === null) return null;
+    const targets = allForkSquares(position, from);
+    if (targets.length === 0) return null;
+    return { from, targets };
+  }, [position]);
+
+  // Panel açılınca bekleyen piyade seçili gelir (hedefe tek dokunuş yeter).
+  useEffect(() => {
+    if (forkOpen && forkInfo) setSelected(forkInfo.from);
+    if (!forkOpen) setSelected(null);
+  }, [forkOpen, forkInfo]);
+
+  const forkAnnotations = useMemo(
+    () =>
+      forkOpen && forkInfo
+        ? forkInfo.targets.map((square) => ({ kind: 'destination' as const, square }))
+        : [],
+    [forkOpen, forkInfo],
+  );
 
   // Tuzak "Göster" düğmesi 12sn sonra belirir (azaltılmış hareketle hemen).
   useEffect(() => {
@@ -157,7 +194,13 @@ export const GuidedLessonView: FC<GuidedLessonViewProps> = ({ lesson, onExit, on
           onSwap={onSwap}
         />
       )}
-      <AnnotationLayer annotations={annotations} centers={geom.centers} squareSize={geom.size} width={geom.w} height={geom.h} />
+      <AnnotationLayer
+        annotations={[...annotations, ...forkAnnotations]}
+        centers={geom.centers}
+        squareSize={geom.size}
+        width={geom.w}
+        height={geom.h}
+      />
     </div>
   );
 
@@ -224,6 +267,9 @@ export const GuidedLessonView: FC<GuidedLessonViewProps> = ({ lesson, onExit, on
 
       {/* Mobil: balon üstteyse önce panelin balonu */}
       <div className="flex flex-col gap-2 lg:hidden">
+        {forkInfo && (
+          <ForkPanel count={forkInfo.targets.length} open={forkOpen} onToggle={() => setForkOpen((v) => !v)} />
+        )}
         {bubbleTop && panel}
         {board}
         {!bubbleTop && panel}
@@ -231,7 +277,14 @@ export const GuidedLessonView: FC<GuidedLessonViewProps> = ({ lesson, onExit, on
 
       {/* Masaüstü: tahta solda, koç paneli sağda */}
       <div className="hidden gap-4 lg:flex">
-        <div className="max-w-[640px] flex-1">{board}</div>
+        <div className="max-w-[640px] flex-1">
+          {forkInfo && (
+            <div className="mb-2">
+              <ForkPanel count={forkInfo.targets.length} open={forkOpen} onToggle={() => setForkOpen((v) => !v)} />
+            </div>
+          )}
+          {board}
+        </div>
         <div className="w-[340px] shrink-0">{panel}</div>
       </div>
 

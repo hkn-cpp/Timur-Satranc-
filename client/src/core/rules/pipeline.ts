@@ -10,8 +10,9 @@
  *     `shared.revertMoveInArrays` ile geri alır (allocation yok).
  *  3. `buildLegalMoves` — sıra garantisiyle birleştirir: artan kare 0..109,
  *     sonra hisar-çıkış (beyaz SADECE 111, siyah SADECE 110 — legacy quirk,
- *     moveRules.ts:695 birebir), sonra Şah Takası. Sıra, eski
- *     `generateLegalMoves` sırasıyla birebir aynıdır.
+ *     moveRules.ts:695 birebir), sonra Şah Takası, en sonda v3 teleport
+ *     hamleleri. Sıra, eski `generateLegalMoves` sırasının v3 genişlemesidir
+ *     (ilk üç grup birebir aynıdır).
  *
  * `generateLegalMoves.ts` bu hatta delege eden ince kabuktur. Vektör / terfi /
  * takas / hisar / pat mantığı `shared.ts`'tedir — burada SADECE orkestrasyon
@@ -33,7 +34,6 @@ import { MoveSpecialFlag, type Move } from '../move/Move';
 import {
   applyMoveToArrays,
   assertBoardSize,
-  findKingSquare,
   isAttacked,
   isPromotionTarget,
   kingSwapTargets,
@@ -42,8 +42,10 @@ import {
   pseudoTargets,
   resolvePawnPromotion,
   revertMoveInArrays,
+  royalSquares,
   type PseudoTarget,
 } from './shared';
+import { allForkSquares } from './fork';
 
 const TURKISH_LETTERS: Record<string, string> = {
   king: 'Ş',
@@ -126,7 +128,9 @@ export interface KingSafetyOpts {
   promotion?: PieceKind;
   isKingSwap: boolean;
   relocationTo?: SquareIndex | null;
-  newPawnStage?: 0 | 1 | 2;
+  newPawnStage?: 0 | 1 | 2 | 3;
+  newWaiting?: boolean;
+  isTeleport?: boolean;
 }
 
 /** Scratch tamponları pozisyondan tazeler (allocation yok, üzerine yazar). */
@@ -143,9 +147,10 @@ function syncScratch(
 }
 
 /**
- * Aday hamle kendi şahı açıkta bırakmıyor mu?
+ * Aday hamle kendi royal'ini açıkta bırakmıyor mu?
  * Simüle et → `isAttacked` → geri al. Şah Takası her zaman `true` döner
  * (takasın kendi doğrulaması `kingSwapTargets` içinde zaten yapıldı).
+ * v3 K2: birden fazla royal varken tek-tek koruma askıdadır → `true`.
  */
 export function filterKingSafety(
   position: Position,
@@ -156,22 +161,30 @@ export function filterKingSafety(
   scratchCitadels: CitadelState,
 ): boolean {
   if (opts.isKingSwap) return true;
-  syncScratch(position, scratch, scratchCitadels);
   const side = position.sideToMove;
+  const royals = royalSquares(position.board, position.citadels, side);
+  if (royals.length !== 1) return true;
+  syncScratch(position, scratch, scratchCitadels);
   const undo = applyMoveToArrays(scratch, scratchCitadels, from, to, {
     promotion: opts.promotion,
     isKingSwap: false,
     relocationTo: opts.relocationTo ?? null,
     newPawnStage: opts.newPawnStage,
+    newWaiting: opts.newWaiting,
+    isTeleport: opts.isTeleport,
   });
-  const kingSq = findKingSquare(side, scratch, scratchCitadels);
+  // KRİTİK: hamle-SONRASI tahtadaki tek royal denetlenir (Şah oynamış olabilir;
+  // hamle-öncesi kareye bakmak mat/pat filtrelerini bozardı). Hamle sonrası
+  // royal sayısı 1'den farklıysa (örn. Şehzade'ye terfi) K2 askısı geçerlidir.
+  const post = royalSquares(scratch, scratchCitadels, side);
   const legal =
-    kingSq === null || !isAttacked(scratch, scratchCitadels, kingSq, opponent(side));
+    post.length !== 1 || !isAttacked(scratch, scratchCitadels, post[0], opponent(side));
   revertMoveInArrays(scratch, scratchCitadels, undo, false);
   return legal;
 }
 
-/** Hamle sonrası rakip şah saldırı altında mı? (metadata.isCheck — filtre DEĞİL.) */
+/** Hamle sonrası rakip royal saldırı altında mı? (metadata.isCheck — filtre DEĞİL.)
+ *  v3 K2: rakipte 0 veya 2+ royal varken şah kavramı çalışmaz → false. */
 function givesCheck(
   position: Position,
   from: SquareIndex,
@@ -188,9 +201,12 @@ function givesCheck(
     isKingSwap: opts.isKingSwap,
     relocationTo: opts.relocationTo ?? null,
     newPawnStage: opts.newPawnStage,
+    newWaiting: opts.newWaiting,
+    isTeleport: opts.isTeleport,
   });
-  const foeKing = findKingSquare(foe, scratch, scratchCitadels);
-  const check = foeKing !== null && isAttacked(scratch, scratchCitadels, foeKing, side);
+  const foeRoyals = royalSquares(scratch, scratchCitadels, foe);
+  const check =
+    foeRoyals.length === 1 && isAttacked(scratch, scratchCitadels, foeRoyals[0], side);
   revertMoveInArrays(scratch, scratchCitadels, u, opts.isKingSwap);
   return check;
 }
@@ -202,7 +218,9 @@ interface ConsiderOpts {
   extraFlags?: MoveSpecialFlag[];
   isKingSwap?: boolean;
   relocationTo?: SquareIndex | null;
-  newPawnStage?: 0 | 1 | 2;
+  newPawnStage?: 0 | 1 | 2 | 3;
+  newWaiting?: boolean;
+  isTeleport?: boolean;
 }
 
 /**
@@ -238,6 +256,8 @@ export function buildLegalMoves(position: Position): Move[] {
       isKingSwap,
       relocationTo: opts.relocationTo ?? null,
       newPawnStage: opts.newPawnStage,
+      newWaiting: opts.newWaiting,
+      isTeleport: opts.isTeleport,
     };
     if (!filterKingSafety(position, from, to, safety, scratch, scratchCitadels)) return;
 
@@ -246,6 +266,7 @@ export function buildLegalMoves(position: Position): Move[] {
     if (isCitadelSquare(to)) flags.push(MoveSpecialFlag.CitadelEntry);
     if (isKingSwap) flags.push(MoveSpecialFlag.KingSwap);
     if (opts.relocationTo != null) flags.push(MoveSpecialFlag.Relocation);
+    if (opts.isTeleport === true) flags.push(MoveSpecialFlag.Teleport);
 
     const check = givesCheck(position, from, to, safety, scratch, scratchCitadels);
 
@@ -282,6 +303,7 @@ export function buildLegalMoves(position: Position): Move[] {
           promotion: r.promotedKind,
           relocationTo: r.isRelocation ? r.relocationTo : null,
           newPawnStage: r.newStage,
+          newWaiting: r.newWaiting,
         });
       } else {
         consider(p, sq, t.to, t.captured);
@@ -304,6 +326,17 @@ export function buildLegalMoves(position: Position): Move[] {
   for (const ks of kingSwapTargets(side, position.board, citadels, used)) {
     const king = position.board[ks.from] as Piece;
     consider(king, ks.from, ks.to, null, { isKingSwap: true });
+  }
+
+  // 4. v3 K6/K8: bekleyen Piyadelerin Piyadesi ışınlamaları (çatal kareleri).
+  // Sıra garantisi: normal hamleler → hisar-çıkış → takas → teleport.
+  // Arayüz normal listede göstermez (K8 paneli); motor tam listeyi üretir.
+  for (let sq = 0; sq < 110; sq++) {
+    const p = position.board[sq];
+    if (!p || p.side !== side || p.kind !== PieceKind.Pawn || !p.waiting) continue;
+    for (const t of allForkSquares(position, sq)) {
+      consider(p, sq, t, null, { isTeleport: true });
+    }
   }
 
   return moves;

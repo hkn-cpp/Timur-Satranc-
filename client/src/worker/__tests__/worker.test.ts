@@ -94,6 +94,66 @@ export async function runWorkerTests(): Promise<TestSummary> {
   ok(conv.board[tq(1, 1)]?.id === 'w-q', 'W06: taş id korunur');
   ok(conv.flags.fullMoveNumber === 5 && conv.sideToMove === 'white', 'W07: sıra/tur taşınır');
 
+  // ---- W02b. v3 serileştirme: sürüm + yeni alanlar, iki yönlü round-trip
+  const v3pos = createTestPosition(
+    'white',
+    [
+      { sq: tq(0, 0), kind: PieceKind.King, side: 'white' },
+      { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
+      { sq: tq(5, 9), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1, waiting: true },
+      { sq: tq(3, 3), kind: PieceKind.AdventurousKing, side: 'white' },
+    ],
+    { sealed111: true },
+  );
+  const s1 = serializePosition(v3pos);
+  ok(s1.version === 3, 'W07b: serileştirme sürümü 3 yazılır');
+  const d1 = deserializePosition(s1);
+  const s2 = serializePosition(d1);
+  // Anlamsal karşılaştırma: JSON anahtar varlığı değil, alan değerleri
+  // (deserialize eksik `waiting` anahtarını `false` ile doldurur — bu
+  // doldurma K14 gereğidir, dengesizlik değildir).
+  const norm = (p: { kind: unknown; side: unknown; pawnOf?: unknown; pawnStage?: unknown; waiting?: unknown }): string =>
+    JSON.stringify([p.kind, p.side, p.pawnOf ?? null, p.pawnStage ?? null, p.waiting ?? false]);
+  const b1 = (s1.board as unknown[]).map((p) => (p === null ? null : norm(p as never)));
+  const b2 = (s2.board as unknown[]).map((p) => (p === null ? null : norm(p as never)));
+  ok(
+    JSON.stringify(b1) === JSON.stringify(b2) &&
+      s1.zobristHash === s2.zobristHash &&
+      (s2.citadels.topLeft.sealed ?? false) === false &&
+      (s2.citadels.bottomRight.sealed ?? false) === true,
+    'W07c: v3 round-trip iki yönlü stabil (bekleyen + Maceracı Şah + mühür korunur)',
+  );
+  ok(
+    d1.board[tq(5, 9)]?.waiting === true && d1.citadels.bottomRight.sealed === true,
+    'W07d: waiting + sealed deserialize sonrası korunur',
+  );
+  // Eski (sürümsüz) kayıt: eksikler varsayılanla dolar, sıradan piyade bozulmaz.
+  const legacyShaped = {
+    board: v3pos.board,
+    sideToMove: v3pos.sideToMove,
+    citadels: {
+      topLeft: { occupant: null, sealed: undefined as unknown as boolean },
+      bottomRight: { occupant: null, sealed: undefined as unknown as boolean },
+    },
+    flags: v3pos.flags,
+    zobristHash: v3pos.zobristHash.toString(),
+  };
+  const dOld = deserializePosition(legacyShaped);
+  const plainPawn = createTestPosition('white', [
+    { sq: tq(0, 0), kind: PieceKind.King, side: 'white' },
+    { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
+    { sq: tq(4, 4), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Rook },
+  ]);
+  const dPlain = deserializePosition({ ...serializePosition(plainPawn), version: undefined });
+  ok(
+    dOld.citadels.topLeft.sealed === false && dPlain.board[tq(4, 4)]?.waiting === false,
+    'W07e: eski kayıtta waiting/sealed false varsayılır',
+  );
+  ok(
+    dPlain.board[tq(4, 4)]?.pawnStage === undefined,
+    'W07f: sıradan piyadenin pawnStage alanı tanımsız kalır (temsilî terfi korunur)',
+  );
+
   // ---- W03. engine hamlesi → legacy hamle
   const dummyPiece = { id: 'w-q', kind: PieceKind.General, side: 'white' as const, hasMoved: false };
   const engMove: EngineMove = {

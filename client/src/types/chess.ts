@@ -164,6 +164,8 @@ export interface Piece {
   hasMoved?: boolean;
   promotedFrom?: PieceType;
   pawnOfPawnsStage?: number; // 0 = initial, 1 = first promotion/relocated, 2 = fully promoted
+  /** v3: bekleyen Piyadelerin Piyadesi (dokunulmaz; yeni çekirdekten taşınır, display amaçlı). */
+  waiting?: boolean;
 }
 
 export interface Move {

@@ -10,26 +10,32 @@
  * - Row 2 (White Pawn Line): 11 Pawns assigned to underlying piece types
  * - Row 1 (White Middle Line): Symmetrical to Row 8
  * - Row 0 (White Back Line): Symmetrical to Row 9
- * - White Citadel: X = -1, Y = 1 (Left of Row 1)
- * - Black Citadel: X = 11, Y = 8 (Right of Row 8)
+ * - Black Citadel: X = -1, Y = 8 (Left of Row 9, targeted by White King;
+ *   see moveRules.ts BLACK_CITADEL_POS — this comment previously had the
+ *   two citadels swapped)
+ * - White Citadel: X = 11, Y = 1 (Right of Row 2, targeted by Black King)
  */
 
 import { BoardMatrix, CitadelState, GameState, Piece, PieceType, PlayerColor } from '../../types/chess';
 import { createEmptyBoard } from './index';
 
-// Underlying piece type for each column (0..10) of pawns
+// Underlying piece type for each column (0..10) of pawns (v3: 11 distinct
+// identities; x7-x10 duplicates were replaced by Fil/Deve/Mancınık pawns and
+// the Pawn-of-Pawns; see client/docs/terfi-ekosistemi/A-kararlar.md K1).
+// NOTE legacy names: 'general' = Fers, 'queen' = Vezir. 'pawn' = Piyadelerin
+// Piyadesi (3-phase cycle); 'king' = Şah Piyadesi (→ Şehzade line, NOT cycle).
 export const PAWN_COLUMN_PROMOTIONS: PieceType[] = [
   'rook',        // X = 0: Pawn of Rook
   'knight',      // X = 1: Pawn of Knight
   'picket',      // X = 2: Pawn of Picket
   'giraffe',     // X = 3: Pawn of Giraffe
-  'general',     // X = 4: Pawn of General
-  'king',        // X = 5: Pawn of King (Pawn of Pawns / Prince)
-  'queen',       // X = 6: Pawn of Vizier
-  'giraffe',     // X = 7: Pawn of Giraffe
-  'picket',      // X = 8: Pawn of Picket
-  'knight',      // X = 9: Pawn of Knight
-  'rook',        // X = 10: Pawn of Rook
+  'general',     // X = 4: Pawn of General (Fers)
+  'king',        // X = 5: Pawn of King (→ Prince, NOT Pawn-of-Pawns)
+  'queen',       // X = 6: Pawn of Vizier (Vezir)
+  'bishop',      // X = 7: Pawn of Elephant (Fil)
+  'camel',       // X = 8: Pawn of Camel (Deve)
+  'warMachine',  // X = 9: Pawn of War Engine (Mancınık)
+  'pawn',        // X = 10: Pawn of Pawns (3-phase cycle)
 ];
 
 // Back row (Y=0 for White, Y=9 for Black) pieces mapping

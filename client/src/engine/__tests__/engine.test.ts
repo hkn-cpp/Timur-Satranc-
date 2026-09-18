@@ -132,6 +132,36 @@ export async function runEngineTests(): Promise<TestSummary> {
   }
   ok(threw, 'E14: mat pozisyonda arama anlamlı hata verir');
 
+  // ---- E6. v3 K13: bekleyen piyade + çok-royal değerleme ve arama geçişi
+  const waitVal = createTestPosition('white', [
+    { sq: tq(0, 0), kind: PieceKind.King, side: 'white' },
+    { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
+    { sq: tq(5, 9), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1, waiting: true },
+  ]);
+  ok(materialWhiteCp(waitVal) === 50, `E15: bekleyen piyade 50cp (gelen ${materialWhiteCp(waitVal)})`);
+  const dualVal = createTestPosition('white', [
+    { sq: tq(0, 0), kind: PieceKind.King, side: 'white' },
+    { sq: tq(1, 0), kind: PieceKind.Prince, side: 'white' },
+    { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
+  ]);
+  // Beyaz: Şah 800 (çok-royal) + Şehzade 300 = 1100.
+  ok(materialWhiteCp(dualVal) === 1100, `E16: çok-royalde Şah 800 + Şehzade 300 (gelen ${materialWhiteCp(dualVal)})`);
+  const loneVal = createTestPosition('white', [
+    { sq: tq(0, 0), kind: PieceKind.King, side: 'white' },
+    { sq: tq(1, 0), kind: PieceKind.Prince, side: 'black' },
+    { sq: tq(10, 9), kind: PieceKind.King, side: 'black' },
+  ]);
+  // Beyaz tek royal: Şah 0. Siyah çift royal: Şah 800 + Şehzade 300 → -1100.
+  ok(materialWhiteCp(loneVal) === -1100, `E17: tek-royalde Şah değersiz (gelen ${materialWhiteCp(loneVal)})`);
+  const rDual = await engine.findBestMove(dualVal, { depth: 2 });
+  const dualLegal = generateLegalMoves(dualVal).some(
+    (m) => m.from === rDual.bestMove.from && m.to === rDual.bestMove.to,
+  );
+  ok(
+    dualLegal && Math.abs(rDual.evaluationCp) < 900000,
+    `E18: çok-royal aramada sonlu skor + legal hamle (skor ${rDual.evaluationCp})`,
+  );
+
   console.log(`engine: ${passed} passed, ${failed} failed`);
   return { passed, failed };
 }

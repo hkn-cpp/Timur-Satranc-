@@ -416,16 +416,16 @@ export const LEARN_LEVELS: LearnLevel[] = [
       },
       {
         id: '5.4',
-        title: '3. Terfi (Yedek Şah / Masnu’a)',
-        goal: 'Üçüncü varışta Yedek Şah unvanını ve hisar kilitleme gücünü kavrama.',
+        title: '3. Terfi (Maceracı Şah)',
+        goal: 'Üçüncü varışta Maceracı Şah unvanını ve hisar kilitleme gücünü kavrama.',
         slides: [
           {
             emoji: '🏵️',
-            title: 'Yedek Şah (Masnu’a)',
-            body: 'Üçüncü kez son yataya ulaştığında nihayet Yedek Şah unvanını alır; Şah gibi hareket eder ve hisar kilitleme gücü kazanır.',
+            title: 'Maceracı Şah',
+            body: 'Üçüncü kez son yataya ulaştığında nihayet Maceracı Şah unvanını alır; Şah gibi hareket eder ve hisar kilitleme gücü kazanır.',
           },
         ],
-        puzzles: puzzlesFor('5.4', ['Masnu’a terfisi', 'Kilitleme hazırlığı'], undefined),
+        puzzles: puzzlesFor('5.4', ['Maceracı Şah terfisi', 'Kilitleme hazırlığı'], undefined),
       },
     ],
   },
@@ -470,12 +470,12 @@ export const LEARN_LEVELS: LearnLevel[] = [
       {
         id: '6.3',
         title: 'Hisar Kilitleme',
-        goal: 'Kendi hisarına girebilen tek figürün Yedek Şah olduğunu kavrama.',
+        goal: 'Kendi hisarına girebilen tek figürün Maceracı Şah olduğunu kavrama.',
         slides: [
           {
             emoji: '🔒',
-            title: 'Kilitleme: Yalnızca Masnu’a',
-            body: 'Kendi hisarına girebilen yegane figür Yedek Şah’tır (Masnu’a). Oraya girerek rakip Şahın sığınmasını kilitler.',
+            title: 'Kilitleme: Yalnızca Maceracı Şah',
+            body: 'Kendi hisarına girebilen yegane figür Maceracı Şah’tır. Oraya girerek rakip Şahın sığınmasını kilitler.',
           },
         ],
         puzzles: puzzlesFor('6.3', ['Kilit karesine gir', 'Rakip sığınağı kapat'], undefined),
@@ -529,9 +529,9 @@ export const PIECE_GUIDES: PieceGuide[] = [
     terfi: 'Terfi ile girer', engineNote: 'Geleneksel kural anlatımı esastır.',
   },
   {
-    key: 'masnua', name: 'Yedek Şah (Masnu’a)', symbol: 'MŞ', value: '—', color: '#fbbf24',
+    key: 'adventurousKing', name: 'Maceracı Şah', symbol: 'MŞ', value: '3.0', color: '#fbbf24',
     move: 'Piyadelerin Piyadesi döngüsünün 3. terfisiyle girer; Şah gibi hareket eder ve hisar kilitleme gücü kazanır.',
-    terfi: 'Piyadelerin Piyadesi döngüsü', engineNote: 'Geleneksel kural anlatımı esastır; oyun motoruna sonraki fazda eklenecek.',
+    terfi: 'Piyadelerin Piyadesi döngüsü',
   },
 ];
 
@@ -545,7 +545,7 @@ export const RULE_ENTRIES: RuleEntry[] = [
   { title: 'Temsilî Terfi', icon: '🔄', desc: 'Her piyade yalnızca temsil ettiği figüre dönüşür; serbest figür seçimi yoktur.' },
   { title: 'Şah Takası (1x)', icon: '🔀', desc: 'Müsabakada 1 defaya mahsus, Şah tehdit altındayken dost taşla anında yer değiştirme.' },
   { title: 'Hisar Beraberliği', icon: '🏰', desc: 'Zayıf tarafın Şahı rakip hisara girerse oyun anında berabere biter.' },
-  { title: 'Hisar Kilitleme', icon: '🔒', desc: 'Kendi hisarına girebilen tek figür Yedek Şah’tır (Masnu’a); rakip sığınmayı kilitler.', engineNote: 'Geleneksel kural anlatımı esastır; oyun motoruna sonraki fazda eklenecek.' },
+  { title: 'Hisar Kilitleme', icon: '🔒', desc: 'Kendi hisarına girebilen tek figür Maceracı Şah’tır; rakip sığınmayı kilitler.' },
   { title: 'Yalın Şah Zaferi', icon: '🏆', desc: 'Rakip ordunun tamamını yok edip Şahı yapayalnız bırakan taraf doğrudan kazanır.', engineNote: 'Geleneksel kural anlatımı esastır; oyun motoruna sonraki fazda eklenecek.' },
   { title: 'Notasyon: a–k + H-SOL/H-SAĞ', icon: '🔢', desc: 'Dikey hatlar a–k, yataylar 1–10; dış cepler H-SOL ve H-SAĞ olarak kaydedilir.' },
 ];

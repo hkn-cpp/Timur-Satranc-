@@ -31,11 +31,11 @@ const PAWN_OF_KEYS = [
   '',
 ] as const;
 
-// P1 DÜZELTME: `pawnStage` (0/1/2) hashe dahil — aynı karede aynı `pawnOf`
-// ama farklı kademedeki piyonlar FARKLI gelecek-hamlelere sahiptir
-// (stage0 relocation, stage1 prince). Eski kod ikisini aynı hashe
-// eşliyordu (tekrar/TT çakışması).
-const PAWN_STAGE_KEYS = ['', '0', '1', '2'] as const;
+// P1 DÜZELTME + v3: `pawnStage` (0/1/2/3) ve `waiting` hashe dahil — aynı
+// karede aynı `pawnOf` ama farklı kademedeki/bekleme durumundaki piyonlar
+// FARKLI gelecek-hamlelere sahiptir. Eski kod çakışıyordu (tekrar/TT).
+const PAWN_STAGE_KEYS = ['', '0', '1', '2', '3'] as const;
+const PAWN_WAIT_KEYS = ['', 'W'] as const;
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -62,12 +62,16 @@ function pieceKey(kind: PieceKind, side: Side, pawnOf?: PieceKind): string {
 /** [square][pieceKey] -> bigint */
 const TABLE: Map<number, Map<string, bigint>> = new Map();
 const SIDE_KEY: Record<Side, bigint> = { white: 0n, black: 0n };
+/** Hisar mühür katkıları (v3 K12): slot başına bir anahtar. */
+const SEALED_KEYS: { topLeft: bigint; bottomRight: bigint } = { topLeft: 0n, bottomRight: 0n };
 
 function buildTable(): void {
   if (TABLE.size > 0) return;
   const rand = mulberry32(0x71bf_1a09);
   SIDE_KEY.white = randomBigint64(rand);
   SIDE_KEY.black = randomBigint64(rand);
+  SEALED_KEYS.topLeft = randomBigint64(rand);
+  SEALED_KEYS.bottomRight = randomBigint64(rand);
   const kinds = Object.values(PieceKind) as PieceKind[];
   for (let sq = 0; sq < TOTAL_SQUARES; sq++) {
     const inner = new Map<string, bigint>();
@@ -76,10 +80,12 @@ function buildTable(): void {
         if (kind === PieceKind.Pawn) {
           for (const pawnOf of PAWN_OF_KEYS) {
             for (const stage of PAWN_STAGE_KEYS) {
-              inner.set(
-                `${kind}|${side}|${pawnOf}|${stage}`,
-                randomBigint64(rand),
-              );
+              for (const wait of PAWN_WAIT_KEYS) {
+                inner.set(
+                  `${kind}|${side}|${pawnOf}|${stage}|${wait}`,
+                  randomBigint64(rand),
+                );
+              }
             }
           }
         } else {
@@ -99,26 +105,28 @@ export function hashContribution(
   kind: PieceKind,
   side: Side,
   pawnOf?: PieceKind,
-  pawnStage?: 0 | 1 | 2,
+  pawnStage?: 0 | 1 | 2 | 3,
+  waiting?: boolean,
 ): bigint {
   const inner = TABLE.get(square);
   if (!inner) return 0n;
   const key =
     kind === PieceKind.Pawn
-      ? `${kind}|${side}|${pawnOf ?? ''}|${pawnStage ?? ''}`
+      ? `${kind}|${side}|${pawnOf ?? ''}|${pawnStage ?? ''}|${waiting ? 'W' : ''}`
       : pieceKey(kind, side);
   return inner.get(key) ?? 0n;
 }
 
 /**
- * Pozisyon hash'i: board[0..111] katkıları XOR + sideToMove katkısı.
- * Hisar occupant'ları board[110]/board[111] olarak taşınır (çağıran
- * `computeZobristForArrays(board112, side)` içine hisarları da koyar —
- * bkz. `computeZobristHash`).
+ * Pozisyon hash'i: board[0..111] katkıları XOR + sideToMove katkısı +
+ * hisar mühür katkıları (v3). Hisar occupant'ları board[110/111] olarak
+ * taşınır. `citadels` verilmezse mühürsüz varsayılır (eski çağrılarla
+ * aynı hash — geriye uyumlu).
  */
 export function computeZobristForArrays(
   board112: BoardArray | (unknown | null)[],
   sideToMove: Side,
+  citadels?: { topLeft: { sealed: boolean }; bottomRight: { sealed: boolean } },
 ): bigint {
   let h = 0n;
   for (let sq = 0; sq < board112.length && sq < TOTAL_SQUARES; sq++) {
@@ -126,10 +134,13 @@ export function computeZobristForArrays(
       kind: PieceKind;
       side: Side;
       pawnOf?: PieceKind;
-      pawnStage?: 0 | 1 | 2;
+      pawnStage?: 0 | 1 | 2 | 3;
+      waiting?: boolean;
     } | null;
-    if (p) h ^= hashContribution(sq, p.kind, p.side, p.pawnOf, p.pawnStage);
+    if (p) h ^= hashContribution(sq, p.kind, p.side, p.pawnOf, p.pawnStage, p.waiting);
   }
+  if (citadels?.topLeft.sealed) h ^= SEALED_KEYS.topLeft;
+  if (citadels?.bottomRight.sealed) h ^= SEALED_KEYS.bottomRight;
   h ^= SIDE_KEY[sideToMove];
   return h;
 }

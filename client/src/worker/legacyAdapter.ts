@@ -61,6 +61,9 @@ const KIND_TO_LEGACY: Record<PieceKind, LegacyPieceType> = {
   [PieceKind.Picket]: 'picket',
   [PieceKind.Pawn]: 'pawn',
   [PieceKind.Prince]: 'prince',
+  // v3: Maceracı Şah'ın legacy karşılığı yok; GÖRÜNTÜ amaçlı `prince`
+  // anahtarına eşlenir (Şah PNG'si). Kural motoru bu eşlemeyi kullanmaz.
+  [PieceKind.AdventurousKing]: 'prince',
 };
 
 /** 110/111 + tahta karesi → legacy BoardPosition. */
@@ -213,6 +216,7 @@ export function positionToLegacyBoardAndCitadels(pos: EnginePosition): {
           hasMoved: p.hasMoved,
           promotedFrom: p.pawnOf ? KIND_TO_LEGACY[p.pawnOf] : undefined,
           pawnOfPawnsStage: p.pawnStage,
+          waiting: p.waiting,
         };
       }
     }

@@ -124,6 +124,8 @@ export const GuidedBoard: FC<GuidedBoardProps> = ({
         validMoves={validMoves}
         turn={position.sideToMove}
         cellA11y
+        sealedLeft={position.citadels.topLeft.sealed}
+        sealedRight={position.citadels.bottomRight.sealed}
         onSquareClick={(pos) => click(legacyToSquare(pos))}
         onDropMove={(from, to) => handleDrop(legacyToSquare(from), legacyToSquare(to))}
       />

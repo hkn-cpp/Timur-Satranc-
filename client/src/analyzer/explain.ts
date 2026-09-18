@@ -25,6 +25,7 @@ const KIND_TR: Record<PieceKind, string> = {
   [PieceKind.Picket]: 'Talea',
   [PieceKind.Pawn]: 'Piyon',
   [PieceKind.Prince]: 'Şehzade',
+  [PieceKind.AdventurousKing]: 'Maceracı Şah',
 };
 
 export function pieceNameTR(kind: PieceKind): string {

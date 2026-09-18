@@ -77,7 +77,10 @@ export enum PieceKind {
   Picket = 'picket', // Tale'a
   Pawn = 'pawn', // alt tür `pawnOf` alanında belirlenir
   // --- LEGACY EXTENSION (spec §7.1'de yok; gerekçe yukarıda madde 1) ---
-  Prince = 'prince', // Şehzade: Şah gibi hareket eder, royal değildir
+  Prince = 'prince', // Şehzade: Şah gibi hareket eder, royal değil (v3'ten itibaren royal — royalSquares)
+  // --- v3 EXTENSION (terfi ekosistemi): 3. terfi ürünü Maceracı Şah.
+  // Tam royal'dir; Şehzade gibi hareket eder + kendi hisarına girip kilitler.
+  AdventurousKing = 'adventurousKing',
 }
 
 export interface Piece {
@@ -87,12 +90,13 @@ export interface Piece {
   pawnOf?: PieceKind; // sadece kind === Pawn ise dolu: hangi figürün piyadesi
   hasMoved: boolean; // terfi / hisar giriş kuralları için
   // --- LEGACY EXTENSION (spec §7.1'de yok; gerekçe aşağıda) ---
-  pawnStage?: 0 | 1 | 2; // SADECE Pawn + pawnOf===Pawn için: Pawn-of-Pawns
-  // kademesi (legacy `pawnOfPawnsStage`). 0=başlangıç, 1=relocate edildi,
-  // 2=tam terfi (prince oldu). Neden gerekli: legacy Rule 4, ilk varışta
-  // güvenli-kareye TAŞIR (taş piyon kalır), ikinci varışta prince yapar.
-  // `hasMoved` bunu ayırt edemez (sıradan ilerleyen piyon da hasMoved=true
-  // olur). Alanı taşımamak kural değişikliği olurdu.
+  pawnStage?: 0 | 1 | 2 | 3; // SADECE Pawn + pawnOf===Pawn için: Piyadelerin Piyadesi
+  // kademesi. 0=başlangıç, 1=1. varış sonrası bekleme, 2=orijine döndü,
+  // 3=Maceracı Şah oldu. (v3: kademe 3 eklendi; 2 artık Şehzade DEĞİL,
+  // orijine-dönüş kademesidir.)
+  /** v3: bekleyen piyade (K4/K5). 10. yatayda varış karesini işgal eder,
+   *  alınamaz, saldırmaz/saldırılmaz, normal hamlesi yoktur. */
+  waiting?: boolean;
 }
 
 export type BoardArray = ReadonlyArray<Piece | null>; // length = 112
@@ -120,7 +124,9 @@ export type GameResult =
   | { type: 'stalemate_win'; winner: Side } // pat = galibiyet (Timur'a özgü kural)
   | { type: 'resignation'; winner: Side }
   | { type: 'timeout'; winner: Side }
-  | { type: 'draw'; reason: 'agreement' | 'repetition' | 'fifty_move' };
+  // v3: hisar beraberliği `agreement`ten ayrıldı (`citadel`); kilitli hisar
+  // beraberlik üretmez (K12).
+  | { type: 'draw'; reason: 'agreement' | 'repetition' | 'fifty_move' | 'citadel' };
 
 export interface Position {
   board: BoardArray;

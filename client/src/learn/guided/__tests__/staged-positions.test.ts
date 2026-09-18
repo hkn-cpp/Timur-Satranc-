@@ -108,7 +108,7 @@ export function runStagedPositionTests(): TestSummary {
     const pawn = pos.board[sq(c, 8)] as Piece;
     const r = resolvePawnPromotion(pawn, pos.board, pos.citadels);
     if (pawn.pawnOf === PieceKind.Pawn) {
-      ok(r.isRelocation === true && r.promotedKind === PieceKind.Pawn, 'K4b: Pawn kimliği bekleme (relocation)');
+      ok(r.isRelocation === false && r.promotedKind === PieceKind.Pawn && r.newWaiting === true, 'K4b: Pawn kimliği yerinde bekler (v3, relocation yok)');
     } else {
       ok(r.promotedKind === expected.get(pawn.pawnOf as PieceKind), `K4b: ${pawn.pawnOf} → ${r.promotedKind}`);
     }

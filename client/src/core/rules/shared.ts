@@ -55,7 +55,8 @@ export function pieceAt(
   return (board as (Piece | null)[])[sq];
 }
 
-/** Hedef kareye inilebilir mi (boş veya düşman)? — moveRules.ts:50-64 `canLandOn` portu. */
+/** Hedef kareye inilebilir mi (boş veya düşman)? — moveRules.ts:50-64 `canLandOn` portu.
+ *  v3 K5: bekleyen piyadenin karesi hedef OLAMAZ (dokunulmaz). */
 export function canLand(
   board: BoardArray | (Piece | null)[],
   citadels: CitadelState,
@@ -64,6 +65,7 @@ export function canLand(
 ): { canMove: boolean; isCapture: boolean; captured: Piece | null } {
   const occupant = pieceAt(board, citadels, to);
   if (!occupant) return { canMove: true, isCapture: false, captured: null };
+  if (occupant.waiting) return { canMove: false, isCapture: false, captured: null };
   if (occupant.side !== movingSide) {
     return { canMove: true, isCapture: true, captured: occupant };
   }
@@ -87,6 +89,9 @@ export function pseudoTargets(
 ): PseudoTarget[] {
   const out: PseudoTarget[] = [];
   const side = piece.side;
+
+  // v3 K5: bekleyen piyadenin normal hamlesi YOK (yalnızca ışınlanır — K6).
+  if (piece.waiting) return out;
 
   const tryAdd = (to: SquareIndex): boolean => {
     // Tahta dışı + hisar-dışı hedef geçersiz (legacy: isCitadel değilse isWithinBoard).
@@ -141,9 +146,12 @@ export function pseudoTargets(
   const { col: x, row: y } = pos;
 
   switch (piece.kind) {
-    // Şah + Şehzade: 8 yön 1 adım (moveRules.ts:240-263). Hisar girişi SADECE Şah.
+    // Şah + Şehzade + Maceracı Şah: 8 yön 1 adım (moveRules.ts:240-263).
+    // Hisar girişi: Şah SADECE rakip hisara; Maceracı Şah SADECE kendi
+    // hisarına (v3 K11/K12); Şehzade GİREMEZ (korunur).
     case PieceKind.King:
-    case PieceKind.Prince: {
+    case PieceKind.Prince:
+    case PieceKind.AdventurousKing: {
       const dirs = [
         [-1, -1], [0, -1], [1, -1],
         [-1, 0], [1, 0],
@@ -157,6 +165,12 @@ export function pseudoTargets(
         // Beyaz Şah (x==0, |y-8|<=1) → sol hisar; Siyah Şah (x==10, |y-1|<=1) → sağ hisar.
         if (side === 'white' && x === 0 && Math.abs(y - 8) <= 1) tryAdd(TOP_LEFT_CITADEL);
         if (side === 'black' && x === 10 && Math.abs(y - 1) <= 1) tryAdd(BOTTOM_RIGHT_CITADEL);
+      }
+      if (piece.kind === PieceKind.AdventurousKing) {
+        // Kendi hisarı: beyaz → sağ (111), siyah → sol (110). Şah'ın
+        // rakip-hisar komşuluk kuralının aynası.
+        if (side === 'white' && x === 10 && Math.abs(y - 1) <= 1) tryAdd(BOTTOM_RIGHT_CITADEL);
+        if (side === 'black' && x === 0 && Math.abs(y - 8) <= 1) tryAdd(TOP_LEFT_CITADEL);
       }
       break;
     }
@@ -320,15 +334,50 @@ export interface PawnPromotionResolution {
   promotedKind: PieceKind;
   isRelocation: boolean;
   relocationTo: SquareIndex | null;
-  newStage?: 0 | 1 | 2;
+  newStage?: 0 | 1 | 2 | 3;
+  /** v3: hamle sonrası bekleme durumu (1. varışta true, orijin/teleportta false). */
+  newWaiting?: boolean;
+}
+
+/** Kendi Şah Piyadesinin başlangıç karesi (2. terfi hedefi — K10). */
+export function kingPawnOriginSquare(side: Side): SquareIndex {
+  return (side === 'white' ? 2 : 7) * BOARD_COLS + 5;
 }
 
 /**
- * Piyon terfi hattı — moveRules.ts:626-664 `processPawnPromotion` portu.
- *  - Pawn-of-King (pawnOf===King) → Prince.
- *  - Pawn-of-Pawns (pawnOf===Pawn): stage 0 → güvenli-kareye taşıma (taş piyon
- *    kalır, stage 1); stage>=1 → Prince (stage 2).
- *  - Alt-subay piyonları → kendi türü (customType varsa o).
+ * K10: orijin karesi doluysa aynı sütunda ileri doğru ilk boş kare
+ * (beyaz yukarı, siyah aşağı). Sütun doluysa null (beklemeye devam).
+ */
+export function originLandingSquare(
+  side: Side,
+  board: BoardArray | (Piece | null)[],
+): SquareIndex | null {
+  const arr = board as (Piece | null)[];
+  const col = 5;
+  if (side === 'white') {
+    for (let row = 2; row < BOARD_ROWS; row++) {
+      const sq = coordToSquare(col, row);
+      if (sq !== null && arr[sq] === null) return sq;
+    }
+    return null;
+  }
+  for (let row = 7; row >= 0; row--) {
+    const sq = coordToSquare(col, row);
+    if (sq !== null && arr[sq] === null) return sq;
+  }
+  return null;
+}
+
+/**
+ * Piyon terfi hattı v3 (terfi ekosistemi K1–K6, K10–K11).
+ *  - Pawn-of-King (pawnOf===King) → Prince (değişmez, C2).
+ *  - Pawn-of-Pawns (pawnOf===Pawn): stage 0 → YERİNDE BEKLER (taş piyon
+ *    kalır, stage 1, waiting; relocation YOK — K3/K4).
+ *  - stage 1 → ORİJİNE DÖNÜŞ (K10): Şah Piyadesi başlangıç karesi, doluysa
+ *    sütunda ileri ilk boş kare (relocation semantiği: `to` karesindeki
+ *    yakalama alınır, iniş hedef karedir). Sütun doluysa beklemeye devam.
+ *  - stage>=2 → Maceracı Şah (stage 3, K11/C6).
+ *  - Alt-subay piyonları → kendi türü (customType varsa o; değişmez, C1).
  */
 export function resolvePawnPromotion(
   pawn: Piece,
@@ -336,6 +385,7 @@ export function resolvePawnPromotion(
   citadels: CitadelState,
   customType?: PieceKind,
 ): PawnPromotionResolution {
+  void citadels; // v3: orijin hesabı hisarsızdır; imza uyumluluğu korunur.
   if (pawn.pawnOf === PieceKind.King) {
     return { promotedKind: PieceKind.Prince, isRelocation: false, relocationTo: null };
   }
@@ -343,12 +393,17 @@ export function resolvePawnPromotion(
   if (isPawnOfPawns) {
     const stage = pawn.pawnStage ?? 0;
     if (stage === 0) {
-      const safe = findSafeRelocationSquare(pawn.side, board, citadels);
-      if (safe !== null) {
-        return { promotedKind: PieceKind.Pawn, isRelocation: true, relocationTo: safe, newStage: 1 };
-      }
+      return { promotedKind: PieceKind.Pawn, isRelocation: false, relocationTo: null, newStage: 1, newWaiting: true };
     }
-    return { promotedKind: PieceKind.Prince, isRelocation: false, relocationTo: null, newStage: 2 };
+    if (stage === 1) {
+      const landing = originLandingSquare(pawn.side, board);
+      if (landing !== null) {
+        return { promotedKind: PieceKind.Pawn, isRelocation: true, relocationTo: landing, newStage: 2, newWaiting: false };
+      }
+      // Sütun dolu: beklemeye devam, sırası geldiğinde tekrar denenir (K10).
+      return { promotedKind: PieceKind.Pawn, isRelocation: false, relocationTo: null, newStage: 1, newWaiting: true };
+    }
+    return { promotedKind: PieceKind.AdventurousKing, isRelocation: false, relocationTo: null, newStage: 3, newWaiting: false };
   }
   return { promotedKind: customType ?? pawn.pawnOf ?? PieceKind.General, isRelocation: false, relocationTo: null };
 }
@@ -403,7 +458,9 @@ export function findSafeRelocationSquare(
   return null;
 }
 
-/** Verilen renkten Şah'ın karesi (tahta önce, sonra hisar) — moveRules.ts:443-465 portu. */
+/** Verilen renkten Şah'ın karesi (tahta önce, sonra hisar) — moveRules.ts:443-465 portu.
+ *  v3 NOTU: bu fonksiyon YALNIZCA `King` arar ve korunur (geri uyumluluk);
+ *  royal kümesi için `royalSquares()` kullanılır. */
 export function findKingSquare(
   side: Side,
   board: BoardArray | (Piece | null)[],
@@ -424,6 +481,33 @@ export function findKingSquare(
   return null;
 }
 
+/** Royal taş türleri (v3 K2/K11): Şah + Şehzade + Maceracı Şah. */
+export function isRoyalKind(kind: PieceKind): boolean {
+  return kind === PieceKind.King || kind === PieceKind.Prince || kind === PieceKind.AdventurousKing;
+}
+
+/**
+ * Bir tarafın royal kareleri, tahta sırasında (0..109 artan, sonra 110, 111).
+ * v3 K2/K3 oyun-sonu ve yasallık mantığının tek girdisidir.
+ */
+export function royalSquares(
+  board: BoardArray | (Piece | null)[],
+  citadels: CitadelState,
+  side: Side,
+): SquareIndex[] {
+  const out: SquareIndex[] = [];
+  const arr = board as (Piece | null)[];
+  for (let sq = 0; sq < BOARD_COLS * BOARD_ROWS; sq++) {
+    const p = arr[sq];
+    if (p && p.side === side && isRoyalKind(p.kind)) out.push(sq);
+  }
+  const tl = citadels.topLeft.occupant;
+  if (tl && tl.side === side && isRoyalKind(tl.kind)) out.push(TOP_LEFT_CITADEL);
+  const br = citadels.bottomRight.occupant;
+  if (br && br.side === side && isRoyalKind(br.kind)) out.push(BOTTOM_RIGHT_CITADEL);
+  return out;
+}
+
 /**
  * Kare saldırısı — moveRules.ts:469-487 portu.
  * QUIRK (birebir korundu): saldırgan taraması SADECE tahta karelerindedir;
@@ -442,9 +526,14 @@ export function isAttacked(
   bySide: Side,
 ): boolean {
   const arr = board as (Piece | null)[];
+  // v3 K5: bekleyen piyade kurbansa kare saldırılıyor sayılmaz.
+  const victim = sq >= 0 && sq < BOARD_COLS * BOARD_ROWS ? arr[sq] : pieceAt(board, citadels, sq);
+  if (victim && victim.waiting) return false;
   for (let s = 0; s < BOARD_COLS * BOARD_ROWS; s++) {
     const p = arr[s];
     if (p && p.side === bySide) {
+      // v3 K5: bekleyen piyade saldırmaz.
+      if (p.waiting) continue;
       if (p.kind === PieceKind.Pawn) {
         const c = squareToCoord(s);
         if (!c) continue;
@@ -477,6 +566,8 @@ export interface UndoRecord {
   prevSideToMove: Side;
   prevKingSwap: Record<Side, boolean>;
   prevHash: bigint;
+  /** v3 K12: mühür kalıcıdır (gerçek hamlede); arama-geri-alma için hamle-öncesi değer. */
+  prevSealed: { topLeft: boolean; bottomRight: boolean };
 }
 
 /**
@@ -494,7 +585,11 @@ export function applyMoveToArrays(
     promotion?: PieceKind;
     isKingSwap: boolean;
     relocationTo?: SquareIndex | null;
-    newPawnStage?: 0 | 1 | 2;
+    newPawnStage?: 0 | 1 | 2 | 3;
+    /** v3: hamle sonrası bekleme durumu (1. varışta true, teleport/orijinde false). */
+    newWaiting?: boolean;
+    /** v3 K6: çatal ışınlaması (bekleyen piyade hedefe iner, bekleme biter). */
+    isTeleport?: boolean;
   },
 ): UndoRecord {
   const read = (sq: SquareIndex): Piece | null =>
@@ -517,6 +612,7 @@ export function applyMoveToArrays(
   };
 
   // prev* alanları makeMove.ts doldurur (burada bilinmez) — tip için placeholder.
+  // prevSealed burada bilinir (hisar durumu hamle-öncesi okunur).
   const undo: UndoRecord = {
     from,
     to,
@@ -530,6 +626,7 @@ export function applyMoveToArrays(
     prevSideToMove: 'white',
     prevKingSwap: { white: false, black: false },
     prevHash: 0n,
+    prevSealed: { topLeft: citadels.topLeft.sealed, bottomRight: citadels.bottomRight.sealed },
   };
 
   // 1. Şah Takası: iki dost taşın yeri değişir (moveRules.ts:95-114).
@@ -549,6 +646,7 @@ export function applyMoveToArrays(
   // P0 DÜZELTME: relocation'da yakalama `to` karesindedir (piyon çapraz
   // taş alıp güvenli-kareye ışınlanır); eski kod `landing` karesini
   // okuyup `to`'daki düşmanı tahtada BIRAKIYORDU (taş çoğalması).
+  // v3: teleport hamlesinde bekleme biter (waiting=false).
   const moving = read(from) as Piece;
   write(from, null);
   const effectiveKind = opts.promotion ?? moving.kind;
@@ -568,8 +666,18 @@ export function applyMoveToArrays(
     kind: effectiveKind,
     hasMoved: true,
     pawnStage: opts.newPawnStage ?? moving.pawnStage,
+    waiting: opts.isTeleport === true ? false : (opts.newWaiting ?? moving.waiting),
   };
   write(landing, placed);
+  // v3 K12: Maceracı Şah KENDİ hisarına girince mühürlenir (kalıcı).
+  if (
+    effectiveKind === PieceKind.AdventurousKing &&
+    ((moving.side === 'white' && landing === BOTTOM_RIGHT_CITADEL) ||
+      (moving.side === 'black' && landing === TOP_LEFT_CITADEL))
+  ) {
+    if (landing === TOP_LEFT_CITADEL) citadels.topLeft.sealed = true;
+    else citadels.bottomRight.sealed = true;
+  }
   return undo;
 }
 
@@ -594,6 +702,11 @@ export function revertMoveInArrays(
     write(undo.to, undo.targetBefore ? { ...undo.targetBefore } : null);
     return;
   }
+  // v3 K12: mühür kalıcıdır — GERÇEK hamle geri alınmaz; ama arama içi
+  // hipotetik hamleler (`makeMoveInPlace` + `undoMoveInPlace`) hamle-öncesi
+  // mührü restore eder (yoksa arama ağacı üst düğümü kirletir).
+  citadels.topLeft.sealed = undo.prevSealed.topLeft;
+  citadels.bottomRight.sealed = undo.prevSealed.bottomRight;
   if (undo.landing !== undo.to) {
     write(undo.landing, undo.landingBefore ? { ...undo.landingBefore } : null);
     write(undo.to, undo.capturedBefore ? { ...undo.capturedBefore } : null);
@@ -628,9 +741,16 @@ export function kingSwapTargets(
   }
   if (kingSq === null) return out;
   const king = arr[kingSq] as Piece;
+  // v3 K2: birden fazla royal varken tek-tek royal koruma askıda olduğundan
+  // takas-sonrası şah-güvenlik doğrulaması uygulanmaz.
+  const multiRoyal = royalSquares(board, citadels, side).length > 1;
   for (let sq = 0; sq < BOARD_COLS * BOARD_ROWS; sq++) {
     const p = arr[sq];
     if (!p || p.side !== side || p.kind === PieceKind.King || p.id === king.id) continue;
+    if (multiRoyal) {
+      out.push({ from: kingSq, to: sq });
+      continue;
+    }
     // Takas simülasyonu: şah hedef kareye geçince saldırı altında kalmamalı.
     const scratchBoard = arr.slice();
     const scratchCitadels: CitadelState = {

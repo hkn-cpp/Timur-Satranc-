@@ -76,7 +76,9 @@ interface ResolvedMove {
   promotion?: import('../position/Position').PieceKind;
   isKingSwap: boolean;
   relocationTo: number | null;
-  newPawnStage?: 0 | 1 | 2;
+  newPawnStage?: 0 | 1 | 2 | 3;
+  newWaiting?: boolean;
+  isTeleport: boolean;
 }
 
 /**
@@ -89,7 +91,12 @@ function resolveForApply(
   move: Move,
 ): ResolvedMove {
   const isKingSwap = move.specialFlags.includes(MoveSpecialFlag.KingSwap);
-  if (isKingSwap) return { isKingSwap: true, relocationTo: null };
+  if (isKingSwap) return { isKingSwap: true, relocationTo: null, isTeleport: false };
+  // v3 K6: teleport hamlesi terfi hattına girmez (çatal karesi son yatayda
+  // bile olsa); bekleme biter, tür değişmez.
+  if (move.specialFlags.includes(MoveSpecialFlag.Teleport)) {
+    return { isKingSwap: false, relocationTo: null, newWaiting: false, isTeleport: true };
+  }
   const mover = readSq(
     position.board as (Piece | null)[],
     position.citadels,
@@ -117,6 +124,8 @@ function resolveForApply(
       isKingSwap: false,
       relocationTo: r.isRelocation ? r.relocationTo : null,
       newPawnStage: r.newStage,
+      newWaiting: r.newWaiting,
+      isTeleport: false,
     };
   }
   return {
@@ -127,6 +136,7 @@ function resolveForApply(
     relocationTo: move.specialFlags.includes(MoveSpecialFlag.Relocation)
       ? move.to
       : null,
+    isTeleport: false,
   };
 }
 
@@ -188,10 +198,12 @@ export function makeMove(position: Position, move: Move): Position {
     isKingSwap: resolved.isKingSwap,
     relocationTo: resolved.relocationTo,
     newPawnStage: resolved.newPawnStage,
+    newWaiting: resolved.newWaiting,
+    isTeleport: resolved.isTeleport,
   });
 
   const nextSide: Side = opponent(position.sideToMove);
-  const nextHash = computeZobristForArrays(combined112(board, citadels), nextSide);
+  const nextHash = computeZobristForArrays(combined112(board, citadels), nextSide, citadels);
   const captured = move.capturedPiece ?? undo.capturedBefore;
   const flags = afterFlags(position, move, mover, captured, resolved, nextHash.toString());
 
@@ -220,6 +232,8 @@ export function makeMoveInPlace(position: Position, move: Move): UndoRecord {
         isKingSwap: r.isKingSwap,
         relocationTo: r.relocationTo,
         newPawnStage: r.newPawnStage,
+        newWaiting: r.newWaiting,
+        isTeleport: r.isTeleport,
       };
     })(),
   });
@@ -249,6 +263,7 @@ export function makeMoveInPlace(position: Position, move: Move): UndoRecord {
   const nextHash = computeZobristForArrays(
     combined112(board, position.citadels),
     nextSide,
+    position.citadels,
   );
   position.zobristHash = nextHash;
   const prevKey = (undo.prevHash as bigint).toString();

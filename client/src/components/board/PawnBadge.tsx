@@ -20,6 +20,7 @@ const FIGURE_LETTER: Record<string, string> = {
   picket: 'N',
   pawn: 'P',
   prince: 'Şz',
+  adventurousKing: 'MŞ',
 };
 
 const FIGURE_COLOR: Record<string, string> = {
@@ -35,6 +36,7 @@ const FIGURE_COLOR: Record<string, string> = {
   picket: '#fb923c',
   pawn: '#d1d5db',
   prince: '#fde68a',
+  adventurousKing: '#fbbf24',
 };
 
 interface PawnBadgeProps {

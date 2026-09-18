@@ -42,7 +42,8 @@ export interface TestPieceSpec {
   kind: PieceKind;
   side: Side;
   pawnOf?: PieceKind;
-  pawnStage?: 0 | 1 | 2;
+  pawnStage?: 0 | 1 | 2 | 3;
+  waiting?: boolean;
 }
 
 /** Kare: col 0..10, row 0..9 → index. */
@@ -73,6 +74,7 @@ export function createTestPosition(
       pawnOf: s.pawnOf,
       hasMoved: false,
       pawnStage: s.pawnStage,
+      waiting: s.waiting,
     };
     board[s.sq] = p;
     if (s.sq === 110) citadels.topLeft.occupant = p;
@@ -90,7 +92,7 @@ export function createTestPosition(
     },
     zobristHash: 0n,
   } as Position;
-  pos.zobristHash = computeZobristForArrays(board as never, sideToMove);
+  pos.zobristHash = computeZobristForArrays(board as never, sideToMove, citadels);
   return pos;
 }
 
@@ -269,16 +271,17 @@ export function runGameCoreTests(): TestSummary {
     { sq: tq(5, 8), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn },
   ]);
   const popMove = generateLegalMoves(popPos).find((m) => m.from === tq(5, 8));
-  ok(popMove !== undefined && popMove.specialFlags.includes(MoveSpecialFlag.Relocation), 'F5: pawn-of-pawns ilk varışta relocation bayrağı alır');
+  // v3 K3/K4: ilk varışta relocation YOK — piyon varış karesinde bekler.
+  ok(popMove !== undefined && !popMove.specialFlags.includes(MoveSpecialFlag.Relocation), 'F5: v3 ilk varışta relocation bayrağı YOK (yerinde bekler)');
   const popAfter = makeMove(popPos, popMove as never as import('../move/Move').Move);
+  const waited = popAfter.board[tq(5, 9)] as Piece | null;
   ok(
-    (popAfter.board[tq(5, 9)] as Piece | null) === null &&
-      (popAfter.board[tq(0, 2)] as Piece | null)?.kind === PieceKind.Pawn,
-    'F6: relocation güvenli-kareye (0,2) konur, hedef boş kalır',
+    waited?.kind === PieceKind.Pawn && waited.waiting === true,
+    'F6: 1. varış sonrası piyon varış karesini işgal eder ve bekler',
   );
   ok(
-    (popAfter.board[tq(0, 2)] as Piece | null)?.pawnStage === 1,
-    'F7: relocation sonrası kademe 1 olur',
+    (popAfter.board[tq(5, 9)] as Piece | null)?.pawnStage === 1,
+    'F7: bekleme sonrası kademe 1 olur',
   );
   const pop2Pos = createTestPosition('white', [
     { sq: tq(10, 0), kind: PieceKind.King, side: 'white' },
@@ -286,7 +289,19 @@ export function runGameCoreTests(): TestSummary {
     { sq: tq(5, 8), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1 },
   ]);
   const pop2Move = generateLegalMoves(pop2Pos).find((m) => m.from === tq(5, 8));
-  ok(pop2Move?.promotion === PieceKind.Prince, 'F8: pawn-of-pawns ikinci varışta şehzade olur');
+  // v3 K10: ikinci varış orijine (5,2) döndürür (relocation semantiği).
+  ok(
+    pop2Move?.promotion === PieceKind.Pawn &&
+      pop2Move.specialFlags.includes(MoveSpecialFlag.Relocation),
+    'F8: v3 ikinci varış orijine-dönüş relocation üretir (Şehzade DEĞİL)',
+  );
+  const pop2After = makeMove(pop2Pos, pop2Move as never as import('../move/Move').Move);
+  const homed = pop2After.board[tq(5, 2)] as Piece | null;
+  ok(
+    homed?.kind === PieceKind.Pawn && homed?.pawnStage === 2 && homed?.waiting !== true &&
+      (pop2After.board[tq(5, 9)] as Piece | null) === null,
+    'F8b: orijine dönüş (5,2) kademesi 2, bekleme bitmiş, hedef boş',
+  );
 
   // ---- G. hisar
   const entryPos = createTestPosition('white', [
@@ -395,6 +410,48 @@ export function runGameCoreTests(): TestSummary {
   ok(z1.zobristHash === z2.zobristHash && z1.zobristHash !== 0n, 'J1: aynı dizilim aynı hash (id bağımsız)');
   const z3 = createTestPosition('black', [WK, BK]);
   ok(z3.zobristHash !== z1.zobristHash, 'J2: sıra değişimi hashi değiştirir');
+
+  // ---- Jb. v3 hash ayrımları (B1 kanıtları)
+  // Aynı konuma farklı hamle sırasıyla ulaşım: make/undo tutarlılığı.
+  const jPath = createTestPosition('white', [
+    WK,
+    BK,
+    { sq: tq(5, 4), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Rook },
+  ]);
+  const jMove = generateLegalMoves(jPath).find((m) => m.from === tq(5, 4));
+  const jAfter = makeMove(jPath, jMove as never as import('../move/Move').Move);
+  const jDirect = createTestPosition('black', [
+    WK,
+    BK,
+    { sq: tq(5, 5), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Rook },
+  ]);
+  // Not: hasMoved bayrağı hashe girmez; hedef konumlar aynı hash'i verir.
+  ok(jAfter.zobristHash === jDirect.zobristHash, 'J3: farklı yoldan aynı konum aynı hash');
+  const jStage0 = createTestPosition('white', [
+    WK,
+    BK,
+    { sq: tq(5, 8), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 0 },
+  ]);
+  const jStage1 = createTestPosition('white', [
+    WK,
+    BK,
+    { sq: tq(5, 8), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1 },
+  ]);
+  ok(jStage0.zobristHash !== jStage1.zobristHash, 'J4: yalnız promotionStage farklı → farklı hash');
+  const jWait = createTestPosition('white', [
+    WK,
+    BK,
+    { sq: tq(5, 9), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1, waiting: true },
+  ]);
+  const jNoWait = createTestPosition('white', [
+    WK,
+    BK,
+    { sq: tq(5, 9), kind: PieceKind.Pawn, side: 'white', pawnOf: PieceKind.Pawn, pawnStage: 1 },
+  ]);
+  ok(jWait.zobristHash !== jNoWait.zobristHash, 'J5: yalnız waiting farklı → farklı hash');
+  const jSealed = createTestPosition('white', [WK, BK], { sealed110: true });
+  const jOpen = createTestPosition('white', [WK, BK]);
+  ok(jSealed.zobristHash !== jOpen.zobristHash, 'J6: yalnız sealed farklı → farklı hash');
 
   // ---- K. isLegalMove + oyun-sonu yok
   const livePos = createTestPosition('white', [WK, BK]);

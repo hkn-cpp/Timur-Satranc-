@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { BoardPosition, Piece, PlayerColor } from '../../types/chess';
 import { PieceView } from './PieceView';
-import { CastleTurret } from '@phosphor-icons/react';
+import { CastleTurret, Lock } from '@phosphor-icons/react';
 
 interface CitadelBadgeProps {
   side: 'left' | 'right';
@@ -21,6 +21,8 @@ interface CitadelBadgeProps {
   boardRotates?: boolean;
   /** İzleyici siyah taraftaysa true (çerçeve 180° dönüktür) — taş izleyiciye dönük kalır. */
   flipped?: boolean;
+  /** v3 K12: kilitli hisar (Maceracı Şah mühürledi; bu hisardan beraberlik çıkmaz). */
+  sealed?: boolean;
 }
 
 export const CitadelBadge: FC<CitadelBadgeProps> = ({
@@ -40,6 +42,7 @@ export const CitadelBadge: FC<CitadelBadgeProps> = ({
   currentTurn = 'white',
   boardRotates = false,
   flipped = false,
+  sealed = false,
 }) => {
   const isLeft = side === 'left';
   const citadelPos: BoardPosition = {
@@ -86,9 +89,18 @@ export const CitadelBadge: FC<CitadelBadgeProps> = ({
           : piece
           ? 'bg-[#7c532e] shadow-inner'
           : 'bg-[#5a381d] hover:bg-[#6c4323]'
-      } ${isDraggingSource ? 'opacity-30' : ''}`}
+      } ${isDraggingSource ? 'opacity-30' : ''} ${sealed ? 'ring-2 ring-amber-400' : ''}`}
       title={isLeft ? 'Siyah Hisar (9. Satır Sol)' : 'Beyaz Hisar (2. Satır Sağ)'}
     >
+      {sealed && (
+        <span
+          aria-label="Kilitli hisar"
+          className="absolute -top-1 -right-1 z-30 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow"
+          title="Kilitli hisar"
+        >
+          <Lock size={12} weight="bold" />
+        </span>
+      )}
       {piece ? (
         <div
           className="w-full h-full flex items-center justify-center overflow-hidden"

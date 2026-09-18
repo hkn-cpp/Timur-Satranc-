@@ -90,14 +90,8 @@ export const LEVEL_XP_TOTAL: Record<number, number> = {
 
 export const GRAND_XP_TOTAL = 4650;
 
-/** Madde 9: motor mekaniği desteklemediği için narrative kalan dersler. */
+/** Madde 9: v3 sonrası narrative kalan TEK ders (Yalın Şah kapsam dışı). */
 export const NARRATIVE_LESSON_IDS: readonly string[] = [
-  '4.4',
-  '5.1',
-  '5.2',
-  '5.3',
-  '5.4',
-  '6.3',
   '6.5',
 ];
 

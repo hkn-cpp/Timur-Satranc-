@@ -43,7 +43,10 @@ export enum MoveSpecialFlag {
   CitadelSeal = 'citadel_seal',
   // --- LEGACY EXTENSION (gerekçe dosya başında) ---
   KingSwap = 'king_swap', // Rule 2: Şah Takası
-  Relocation = 'relocation', // Rule 4: Pawn-of-Pawns güvenli-kareye taşıma
+  Relocation = 'relocation', // Rule 4: Pawn-of-Pawns güvenli-kareye taşıma (v3: orijine-dönüş de bu bayrağı taşır)
+  // --- v3 EXTENSION (terfi ekosistemi K6): bekleyen piyadenin çatal
+  // karesine ışınlanması. from=bekleyen piyade, to=çatal karesi, sıra geçer.
+  Teleport = 'teleport',
 }
 
 export interface Move {

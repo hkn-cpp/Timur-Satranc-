@@ -19,10 +19,10 @@ Makine-okunur yasak listesi: `02-isim-tablosu.md` (ikinci liste yazılmaz; o dos
 | 10 | Fers | `ferz` | Ferz, Müsteşar |
 | 11 | Piyade | `pawn` | Piyon, Öncü |
 | 12 | Şehzade | `prince` | — |
-| 13 | Masnu'a (Yedek Şah) | — (PieceKind yok, narrative) | Masnu’a varyant yazımları serbest değil |
+| 13 | Maceracı Şah | `adventurousKing` | Masnu'a, Yedek Şah (v3 öncesi adlar; yasak) |
 
 Kural: PDF'de "Ferz / Müsteşar" → **Fers**; "Dabbabe" → **Mancınık**;
-"Öncü / Talia" → **Nöbetçi**; "Piyon" → **Piyade**; "Yedek Şah / Masnu'a" → **Masnu'a**.
+"Öncü / Talia" → **Nöbetçi**; "Piyon" → **Piyade**; "Yedek Şah / Masnu'a" (v3 öncesi) → **Maceracı Şah**.
 Legacy motor kimlikleri yanıltıcıdır: legacy `queen` = **Vezir**, legacy `general` = **Fers**.
 Kod içi İngilizce kimlikler (`queen`, `general`, `picket`, `giraffe`, `rook`,
 `knight`, `pawn`, `king`, `prince`) kullanıcıya asla gösterilmez.
@@ -50,7 +50,7 @@ Kod içi İngilizce kimlikler (`queen`, `general`, `picket`, `giraffe`, `rook`,
 | 5.1 | 1. Terfi (Bekleme Aşaması) |
 | 5.2 | Taktik Çatal Işınlanması |
 | 5.3 | 2. Terfi (Orijine Dönüş) |
-| 5.4 | 3. Terfi (Yedek Şah / Masnu’a) |
+| 5.4 | 3. Terfi (Maceracı Şah) |
 | 6.1 | Şah Takası Manevrası |
 | 6.2 | Hisar Beraberliği |
 | 6.3 | Hisar Kilitleme |
@@ -81,6 +81,11 @@ Kod içi İngilizce kimlikler (`queen`, `general`, `picket`, `giraffe`, `rook`,
 
 ## 5. Yasak adlar (makine kaynağı 02-isim-tablosu.md'dedir)
 
-Yasak (çekimli halleri dahil): Ferz, Müsteşar, Dabbabe, Öncü, Talia, Piyon
+Yasak (çekimli halleri dahil): Ferz, Müsteşar, Dabbabe, Öncü, Talia, Piyon,
+Masnu, Yedek
 ve İngilizce kimlikler: queen, general, picket, giraffe, rook, knight,
 pawn, king, prince.
+
+Not: "Masnu" öneki Masnu’a/Masnu'a/Masnua yazımlarını yakalar. "Yedek Şah"
+ikilisinin ilk sözcüğü ("Yedek") yasaktır; "Şah" tek başına royal adı olarak
+serbesttir.

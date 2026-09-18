@@ -5,7 +5,7 @@ import { PIECE_GUIDES, RULE_ENTRIES } from '../learn/learnContent';
 import { EngineNote } from './learn/EngineNote';
 import { MicroBadgeLegend } from './learn/MicroBadgeLegend';
 
-// Taş görselleri (PDF sırasına göre; Şehzade/Yedek Şah için şah görseli yedeği)
+// Taş görselleri (PDF sırasına göre; Şehzade/Maceracı Şah için şah görseli yedeği — özel PNG yok)
 import sSah from '../assets/pieces/s_sah.png';
 import sVezir from '../assets/pieces/s_vezir.png';
 import sKale from '../assets/pieces/s_kale.png';
@@ -31,7 +31,7 @@ const PIECE_IMGS: Record<string, string> = {
   general: sGeneral,
   picket: sKazik,
   prince: sSah,
-  masnua: sSah,
+  adventurousKing: sSah,
 };
 
 interface RulesPageProps {
@@ -76,7 +76,7 @@ export const RulesPage: FC<RulesPageProps> = ({ onNavigate, rulesTab, setRulesTa
         </button>
         <div>
           <h1 className="font-batangas text-[2rem] font-bold text-white tracking-wide leading-none">Kurallar</h1>
-          <p className="text-[#A7BDB1] text-sm mt-0.5">11 taş + Şehzade + Yedek Şah</p>
+          <p className="text-[#A7BDB1] text-sm mt-0.5">11 taş + Şehzade + Maceracı Şah</p>
         </div>
       </div>
 

@@ -29,7 +29,7 @@ export const DEFAULT_TIMUR_PIECE_VALUES: Record<PieceType, number> = {
   giraffe: 3.5, // Giraffe 350cp
   rook: 5, // Rook 500cp
   king: 0, // King value is non-material (royal)
-  prince: 4, // Prince 400cp (legacy extension, terfi ürünü)
+  prince: 3, // Prince 300cp (v3 K13: Şehzade 3.0; eski 400cp bilinçli değişti)
 };
 
 export interface MaterialAdvantageResult {

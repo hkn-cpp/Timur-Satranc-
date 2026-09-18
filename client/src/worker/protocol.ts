@@ -8,10 +8,15 @@
 
 import type { BotProfileId } from '../bot/profiles';
 import type { AnalysisResult, BestMoveResult, SearchLimits } from '../engine/EngineInterface';
-import type { Position } from '../core/position/Position';
+import { PieceKind, type Piece, type Position } from '../core/position/Position';
+
+/** Serileştirme formatı sürümü (v3: terfi ekosistemi alanları). */
+export const SERIALIZATION_VERSION = 3;
 
 /** `Position`ın `postMessage`/`structuredClone` ile taşınabilir hâli. */
 export interface SerializedPosition {
+  /** Format sürümü; yoksa v2 (terfi-ekosistemi öncesi) varsayılır. */
+  version?: number;
   board: Position['board'];
   sideToMove: Position['sideToMove'];
   citadels: Position['citadels'];
@@ -21,6 +26,7 @@ export interface SerializedPosition {
 
 export function serializePosition(position: Position): SerializedPosition {
   return {
+    version: SERIALIZATION_VERSION,
     board: position.board,
     sideToMove: position.sideToMove,
     citadels: position.citadels,
@@ -30,10 +36,33 @@ export function serializePosition(position: Position): SerializedPosition {
 }
 
 export function deserializePosition(sp: SerializedPosition): Position {
+  const board = (sp.board as (Piece | null)[]).map((p) => {
+    if (!p) return null;
+    const out: Piece = { ...p };
+    // v3 varsayılanları (K14). DİKKAT: `promotionStage` YALNIZCA
+    // Piyadelerin Piyadesi'nde (`pawnOf===Pawn`) 0'a doldurulur; sıradan
+    // piyonlarda `undefined` korunur (`undefined` = sıradan piyade demektir,
+    // hepsine 0 yazmak temsilî terfiyi bozardı).
+    if (out.waiting === undefined) out.waiting = false;
+    if (out.kind === PieceKind.Pawn && out.pawnOf === PieceKind.Pawn && out.pawnStage === undefined) {
+      out.pawnStage = 0;
+    }
+    return out;
+  });
+  const citadels: Position['citadels'] = {
+    topLeft: {
+      occupant: sp.citadels.topLeft.occupant,
+      sealed: sp.citadels.topLeft.sealed ?? false,
+    },
+    bottomRight: {
+      occupant: sp.citadels.bottomRight.occupant,
+      sealed: sp.citadels.bottomRight.sealed ?? false,
+    },
+  };
   return {
-    board: sp.board,
+    board: board as Position['board'],
     sideToMove: sp.sideToMove,
-    citadels: sp.citadels,
+    citadels,
     flags: sp.flags,
     zobristHash: BigInt(sp.zobristHash),
   };
